@@ -7,12 +7,12 @@ coordinates of the place you named, flies there autonomously through a 3D recons
 Amman, and analyses what its camera sees.
 
 <p align="center">
-  <a href="https://youtu.be/VIDEO_ID">
-    <img src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" alt="Watch the UrbanEye demo" width="800">
+  <a href="https://youtu.be/X64fSH44iSk">
+    <img src="https://img.youtube.com/vi/X64fSH44iSk/maxresdefault.jpg" alt="Watch the UrbanEye demo" width="800">
   </a>
 </p>
 
-<p align="center"><b><a href="https://youtu.be/VIDEO_ID">▶ Watch the full demo</a></b></p>
+<p align="center"><b><a href="https://youtu.be/X64fSH44iSk">▶ Watch the full demo</a></b></p>
 
 ---
 
