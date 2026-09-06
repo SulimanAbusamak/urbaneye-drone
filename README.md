@@ -7,11 +7,12 @@ coordinates of the place you named, flies there autonomously through a 3D recons
 Amman, and analyses what its camera sees.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="UrbanEye demo" width="800">
+  <a href="https://youtu.be/VIDEO_ID">
+    <img src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" alt="Watch the UrbanEye demo" width="800">
+  </a>
 </p>
 
-<!-- Replace docs/demo.gif with your own recording. A 15-30 second clip works best:
-     speak a command, show the drone taking off, then the dashboard on arrival. -->
+<p align="center"><b><a href="https://youtu.be/VIDEO_ID">▶ Watch the full demo</a></b></p>
 
 ---
 
