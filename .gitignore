@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+*.wav
+voice_command.wav
+metrics/

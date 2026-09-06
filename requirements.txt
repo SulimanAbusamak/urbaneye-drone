@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+pymavlink
+airsim
+opencv-python
+numpy
+requests
+huggingface_hub

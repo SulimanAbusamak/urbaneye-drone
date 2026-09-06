@@ -1,0 +1,3487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UrbanEye v56 AI Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & ROOT ─────────────────────────────────────── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg-deep:    #050d1a;
+      --bg-mid:     #0a1628;
+      --bg-panel:   rgba(6,20,48,0.72);
+      --bg-card:    rgba(10,28,60,0.65);
+      --border:     rgba(56,189,248,0.15);  
+      --border-glow:rgba(56,189,248,0.35);
+      --accent:     #38bdf8;
+      --accent2:    #6366f1;
+      --accent3:    #22d3ee;
+      --success:    #22c55e;
+      --warning:    #f59e0b;
+      --danger:     #ef4444;
+      --text:       #e0f0ff;
+      --muted:      #7090b8;
+      --glow:       0 0 18px rgba(56,189,248,0.28);
+      --shadow:     0 12px 40px rgba(0,0,0,0.55);
+      --radius:     18px;
+      --radius-sm:  12px;
+      --trans:      0.22s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── SHARED BACKGROUND (like the login page) ──────────── */
+    .page-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(56,189,248,0.20) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 85% 90%,  rgba(99,102,241,0.22) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(14,30,70,0.90)   0%, transparent 70%),
+        linear-gradient(160deg, #050d1a 0%, #080f22 40%, #060c1e 100%);
+    }
+    /* animated floating orbs */
+    .page-bg::before {
+      content:"";
+      position:absolute;
+      width:500px; height:500px;
+      border-radius:50%;
+      background: radial-gradient(circle, rgba(56,189,248,0.07) 0%, transparent 70%);
+      top:-100px; left:-100px;
+      animation: floatOrb 14s ease-in-out infinite alternate;
+    }
+    .page-bg::after {
+      content:"";
+      position:absolute;
+      width:400px; height:400px;
+      border-radius:50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%);
+      bottom:-80px; right:-80px;
+      animation: floatOrb 18s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes floatOrb {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(60px,40px) scale(1.15); }
+    }
+
+    /* star-grid texture overlay */
+    .page-bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* ─── PAGES ─────────────────────────────────────────────── */
+    .page { display:none; position:relative; z-index:1; min-height:100vh; }
+    .page.active { display:flex; }
+
+    /* ─── AUTH PAGES ─────────────────────────────────────────── */
+    .auth-page {
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 28px;
+      padding: 48px 42px;
+      box-shadow: var(--shadow), 0 0 60px rgba(56,189,248,0.08);
+      backdrop-filter: blur(24px);
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(28px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .auth-brand {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .auth-brand .brand-icon {
+      width: 64px; height: 64px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: inline-grid;
+      place-items: center;
+      font-size: 1.8rem;
+      margin-bottom: 14px;
+      box-shadow: 0 0 24px rgba(56,189,248,0.35);
+    }
+    .auth-brand h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .auth-brand p { color: var(--muted); font-size: 0.88rem; margin-top:4px; }
+
+    .auth-box h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 26px;
+      color: var(--text);
+      letter-spacing:1px;
+    }
+
+    .form-group { display:grid; gap:7px; margin-bottom:16px; }
+    .form-group label { font-size:0.82rem; color:var(--muted); font-weight:500; letter-spacing:0.5px; }
+    .form-control {
+      width:100%;
+      padding: 13px 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(56,189,248,0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: var(--trans);
+    }
+    .form-control:focus {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.12), var(--glow);
+    }
+    .form-control option { background: var(--bg-mid); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 22px;
+      border: none; outline: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      transition: var(--trans);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(56,189,248,0.3);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow: 0 8px 28px rgba(56,189,248,0.45); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); transform:translateY(-2px); }
+    .btn-danger { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; }
+    .btn-danger:hover { transform:translateY(-2px); opacity:0.9; }
+    .btn-full { width:100%; }
+
+    .auth-switch {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .auth-switch a {
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .auth-switch a:hover { text-decoration: underline; }
+
+    /* ─── DASHBOARD LAYOUT ───────────────────────────────────── */
+    .dashboard-page {
+      flex-direction: row;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 268px;
+      min-height: 100vh;
+      position: fixed;
+      left: 0; top: 0;
+      padding: 26px 16px;
+      background: rgba(5,14,30,0.80);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: left var(--trans);
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 30px;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: rgba(56,189,248,0.07);
+      border: 1px solid var(--border);
+    }
+    .brand-icon-sm {
+      width: 46px; height: 46px;
+      display: grid; place-items: center;
+      border-radius: 13px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      font-size: 1.3rem;
+      box-shadow: 0 0 16px rgba(56,189,248,0.3);
+    }
+    .brand-text h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem; font-weight: 700; letter-spacing:1px;
+    }
+    .brand-text p { font-size:0.75rem; color:var(--muted); }
+
+    .nav-title {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin: 8px 10px 10px;
+    }
+
+    .nav-links { display:flex; flex-direction:column; gap:6px; }
+    .nav-links a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--trans);
+    }
+    .nav-links a:hover,
+    .nav-links a.active {
+      background: rgba(56,189,248,0.12);
+      color: var(--text);
+      border-color: rgba(56,189,248,0.2);
+      transform: translateX(4px);
+    }
+    .nav-links a.active {
+      box-shadow: 0 0 12px rgba(56,189,248,0.15);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 20px;
+    }
+    .logout-btn {
+      width:100%;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(239,68,68,0.10);
+      color: #ff9e9e;
+      border: 1px solid rgba(239,68,68,0.2);
+      font-family:'Sora',sans-serif; font-size:0.88rem; font-weight:600;
+      cursor:pointer; transition:var(--trans);
+      display:flex; align-items:center; gap:10px;
+    }
+    .logout-btn:hover { background:rgba(239,68,68,0.2); transform:translateX(3px); }
+
+    /* MAIN CONTENT */
+    .main {
+      margin-left: 268px;
+      width: calc(100% - 268px);
+      padding: 28px;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .page-heading h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem; font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .page-heading p { color:var(--muted); font-size:0.9rem; }
+
+    .topbar-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+
+    /* GLASS CARD */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .card { padding: 22px; }
+
+    /* BADGE */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.80rem; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge.success { background:rgba(34,197,94,0.13); color:#9df7b5; border-color:rgba(34,197,94,0.2); }
+    .badge.warning { background:rgba(245,158,11,0.13); color:#ffd27d; border-color:rgba(245,158,11,0.2); }
+    .badge.danger  { background:rgba(239,68,68,0.13);  color:#ff9e9e; border-color:rgba(239,68,68,0.2); }
+
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    .stat-card {
+      padding: 22px;
+      position: relative; overflow: hidden;
+      border-radius: var(--radius);
+    }
+    .stat-card::before {
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(135deg, rgba(56,189,248,0.08), rgba(99,102,241,0.04));
+      pointer-events:none;
+    }
+    .stat-label { color:var(--muted); font-size:0.85rem; margin-bottom:10px; }
+    .stat-value  { font-family:'Orbitron',sans-serif; font-size:1.9rem; font-weight:700; margin-bottom:6px; color:var(--accent); }
+    .stat-footer { font-size:0.82rem; color:var(--muted); }
+
+    /* CONTENT GRID */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    /* TABLE */
+    .section-title {
+      display:flex; justify-content:space-between; align-items:center;
+      gap:14px; margin-bottom:18px; flex-wrap:wrap;
+    }
+    .section-title h3 { font-size:1rem; font-weight:600; }
+    .section-title p  { color:var(--muted); font-size:0.85rem; }
+
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    thead th {
+      text-align:left; color:var(--muted); font-weight:500;
+      padding-bottom:13px;
+      border-bottom:1px solid var(--border);
+      font-size:0.85rem;
+    }
+    tbody td {
+      padding:14px 0;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+      font-size:0.90rem;
+    }
+    tbody tr:last-child td { border-bottom:none; }
+
+    /* INFO LIST */
+    .info-list { display:grid; gap:12px; }
+    .info-item {
+      padding: 13px 15px;
+      border-radius: var(--radius-sm);
+      background: rgba(56,189,248,0.05);
+      border: 1px solid var(--border);
+    }
+    .info-item strong { display:block; margin-bottom:4px; font-size:0.88rem; color:var(--accent); }
+    .info-item span   { font-size:0.88rem; color:var(--muted); }
+
+    /* CONTROL GRID */
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+    }
+    .flight-actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+    .range-box { margin-top:18px; }
+    .range-box label { display:block; margin-bottom:8px; color:var(--muted); font-size:0.88rem; }
+    .range-box input[type="range"] { width:100%; accent-color:var(--accent); }
+
+    .control-pad { display:grid; justify-content:center; gap:10px; margin-top:20px; }
+    .control-row { display:flex; justify-content:center; gap:10px; }
+    .control-btn {
+      width:68px; height:68px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background: rgba(56,189,248,0.07);
+      color:var(--text);
+      cursor:pointer;
+      transition:var(--trans);
+      font-size:1.4rem;
+      box-shadow:var(--shadow);
+    }
+    .control-btn:hover {
+      background:rgba(56,189,248,0.18);
+      transform:scale(1.08);
+      box-shadow:var(--glow);
+    }
+    .log-list { display:grid; gap:10px; max-height:320px; overflow-y:auto; }
+    .log-item {
+      padding:11px 13px;
+      border-radius:10px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      font-size:0.82rem;
+      color:var(--muted);
+    }
+
+    /* CAMERA */
+    .camera-frame {
+      position:relative; overflow:hidden;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:#000;
+    }
+    .camera-frame video, .camera-frame img {
+      width:100%; display:block; border-radius:16px;
+    }
+    .camera-overlay {
+      position:absolute; inset:0; pointer-events:none;
+      border-radius:16px;
+      border:1px solid rgba(56,189,248,0.1);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+    .camera-placeholder {
+      width:100%; aspect-ratio:16/9;
+      background: linear-gradient(135deg,rgba(56,189,248,0.07),rgba(99,102,241,0.07));
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:12px; color:var(--muted); font-size:0.9rem;
+      border-radius:16px;
+    }
+    .camera-placeholder .cam-icon { font-size:3rem; opacity:0.5; }
+    .camera-tags { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+    /* SETTINGS */
+    .settings-list { display:grid; gap:13px; }
+    .setting-row {
+      display:flex; justify-content:space-between;
+      align-items:center; gap:12px;
+      padding:15px 17px;
+      border-radius:var(--radius-sm);
+      background:rgba(56,189,248,0.05);
+      border:1px solid var(--border);
+    }
+    .setting-row strong { font-size:0.92rem; font-weight:600; }
+    .setting-row p { font-size:0.82rem; color:var(--muted); margin-top:3px; }
+
+    .switch { position:relative; width:54px; height:28px; display:inline-block; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider {
+      position:absolute; inset:0;
+      border-radius:999px;
+      background:rgba(255,255,255,0.15);
+      transition:var(--trans); cursor:pointer;
+    }
+    .slider::before {
+      content:"";
+      position:absolute;
+      width:22px; height:22px;
+      left:3px; top:3px;
+      background:#fff;
+      border-radius:50%;
+      transition:var(--trans);
+    }
+    .switch input:checked + .slider { background:linear-gradient(135deg,var(--accent),var(--accent2)); }
+    .switch input:checked + .slider::before { transform:translateX(26px); }
+
+    /* PROFILE */
+    .form-grid { display:grid; gap:15px; }
+
+    /* MOBILE MENU BTN */
+    .mobile-menu { display:none; }
+
+    /* FOOTER */
+    .footer-note {
+      margin-top:24px; color:var(--muted);
+      font-size:0.82rem; text-align:center;
+      border-top:1px solid var(--border);
+      padding-top:14px;
+    }
+
+
+
+    /* ─── URBANEYE START HUB / REVEALED CONTROLS ───────────── */
+    .start-hub {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 24px 0 22px;
+    }
+    .start-hub-card {
+      width: 100%;
+      min-height: 310px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+    }
+    .start-hub-card::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56,189,248,0.16) 0%, transparent 68%);
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    .start-center {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+      z-index: 2;
+    }
+    .start-orb {
+      position: relative;
+      z-index: 1;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto;
+      border-radius: 50%;
+      border: 1px solid rgba(56,189,248,0.55);
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.22), transparent 26%),
+        linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.04rem;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      cursor: pointer;
+      box-shadow: 0 0 28px rgba(56,189,248,0.46), 0 0 90px rgba(99,102,241,0.26);
+      transition: 0.25s ease;
+      display: grid;
+      place-items: center;
+      text-transform: uppercase;
+    }
+    .start-orb span { display: block; font-size: 2.2rem; margin-bottom: 8px; }
+    .start-orb:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 0 38px rgba(56,189,248,0.62), 0 0 120px rgba(99,102,241,0.36); }
+    .start-orb.waiting {
+      background: linear-gradient(135deg, var(--warning), var(--accent2));
+      border-color: rgba(245,158,11,0.65);
+      cursor: wait;
+      animation: startPulse 1.2s ease-in-out infinite;
+    }
+    .start-orb.running {
+      background: linear-gradient(135deg, var(--success), var(--accent3));
+      border-color: rgba(34,197,94,0.65);
+      animation: startPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes startPulse {
+      0%, 100% { box-shadow: 0 0 24px rgba(34,197,94,0.32), 0 0 80px rgba(56,189,248,0.24); }
+      50% { box-shadow: 0 0 44px rgba(34,197,94,0.58), 0 0 130px rgba(56,189,248,0.34); }
+    }
+    .start-hint {
+      position: relative;
+      z-index: 1;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 16px;
+      max-width: 620px;
+    }
+    .after-start { display: none; margin-top: 20px; }
+    .after-start.visible { display: block; animation: fadeUp 0.35s ease both; }
+    .command-inline-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) auto auto auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .command-inline-grid .btn { white-space: nowrap; padding: 13px 18px; }
+    .mic-btn {
+      min-width: 112px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(56,189,248,0.30);
+    }
+    .mic-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(56,189,248,0.45);
+    }
+    .mic-btn.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      animation: pulse-dot 1s ease-in-out infinite;
+    }
+    @media (max-width: 1100px) {
+      .command-inline-grid { grid-template-columns: 1fr 1fr; }
+      .command-inline-grid .command-input-wrap { grid-column: 1 / -1; }
+    }
+    @media (max-width: 640px) {
+      .command-inline-grid { grid-template-columns: 1fr; }
+      .command-inline-grid .btn { width: 100%; }
+      .start-orb { width: 190px; height: 190px; }
+    }
+    .camera-live-img {
+      width:100%;
+      aspect-ratio:16/9;
+      object-fit:contain;
+      display:none;
+      border-radius:16px;
+      background:#000;
+    }
+    .camera-live-img.active { display:block; }
+    .camera-placeholder.hidden { display:none; }
+
+
+
+    /* ─── DESKTOP DRAWER / SIDEBAR TOGGLE ───────────────────── */
+    .drawer-toggle {
+      display: inline-flex !important;
+      min-width: 46px;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+    .sidebar.closed { left: -268px; }
+    .main.sidebar-closed { margin-left: 0; width: 100%; }
+    .plate-link {
+      background: transparent;
+      border: 0;
+      color: var(--accent);
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+      cursor: pointer;
+      font-size: 0.86rem;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .plate-link:hover { color: var(--accent3); }
+    .admin-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .admin-info-card {
+      padding: 16px 17px;
+      border-radius: var(--radius-sm);
+      background: rgba(56,189,248,0.05);
+      border: 1px solid var(--border);
+    }
+    .admin-info-card strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.83rem;
+      margin-bottom: 8px;
+    }
+    .admin-info-card span {
+      color: var(--text);
+      font-size: 0.96rem;
+      word-break: break-word;
+    }
+
+
+    /* ─── COMPUTER VISION PANEL ─────────────────────────────── */
+    .cv-action-row {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:16px;
+    }
+    .cv-file-input {
+      max-width: 320px;
+      min-width: 240px;
+    }
+    .cv-message {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .cv-summary-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cv-mini-card {
+      padding: 13px 15px;
+      border-radius: var(--radius-sm);
+      background: rgba(56,189,248,0.05);
+      border: 1px solid var(--border);
+    }
+    .cv-mini-card strong {
+      display:block;
+      color: var(--accent);
+      font-size: 0.78rem;
+      margin-bottom: 6px;
+    }
+    .cv-mini-card span {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .cv-results-grid {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .cv-result-list {
+      display:grid;
+      gap: 10px;
+    }
+    .cv-result-box {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+    .cv-result-box b {
+      color: var(--text);
+    }
+    .cv-empty {
+      color: var(--muted);
+      font-size: 0.86rem;
+      padding: 12px 0;
+    }
+    @media (max-width: 900px) {
+      .cv-results-grid { grid-template-columns: 1fr; }
+      .cv-file-input { max-width: 100%; width: 100%; }
+    }
+
+
+
+    /* ─── HISTORY ROW DELETE BUTTON ───────────────────────────── */
+    .history-action-cell {
+      text-align: center;
+      width: 58px;
+    }
+    .history-delete-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(239,68,68,0.28);
+      background: rgba(239,68,68,0.10);
+      color: #ff9e9e;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1;
+      transition: var(--trans);
+      display: inline-grid;
+      place-items: center;
+    }
+    .history-delete-btn:hover {
+      background: rgba(239,68,68,0.22);
+      border-color: rgba(239,68,68,0.55);
+      color: #fff;
+      transform: scale(1.08);
+      box-shadow: 0 0 16px rgba(239,68,68,0.22);
+    }
+
+    /* ─── CLEAN ADMIN PAGE ───────────────────────────────── */
+    .admin-clean-wrap {
+      max-width: 980px;
+      display: grid;
+      gap: 16px;
+    }
+    .admin-main-card {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 18px;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-main-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56,189,248,0.16), transparent 34%),
+        radial-gradient(circle at 100% 100%, rgba(99,102,241,0.14), transparent 42%);
+      pointer-events: none;
+    }
+    .admin-avatar-clean {
+      width: 78px;
+      height: 78px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 24px rgba(56,189,248,0.25);
+      position: relative;
+      z-index: 1;
+    }
+    .admin-title-block,
+    .admin-status-block {
+      position: relative;
+      z-index: 1;
+    }
+    .admin-title-block h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: 1px;
+      margin: 0 0 6px;
+    }
+    .admin-title-block p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .admin-status-block {
+      text-align: right;
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+    .admin-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .admin-mini-card {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
+    }
+    .admin-mini-card strong {
+      display: block;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      font-size: 0.72rem;
+      margin-bottom: 8px;
+    }
+    .admin-mini-card span {
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+    .admin-quick-card {
+      padding: 18px;
+    }
+    .admin-quick-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .admin-quick-head h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .admin-quick-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .admin-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .admin-action-btn {
+      padding: 14px 15px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(56,189,248,0.18);
+      background: rgba(56,189,248,0.055);
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: var(--trans);
+      font-weight: 800;
+    }
+    .admin-action-btn small {
+      display: block;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 5px;
+      line-height: 1.35;
+    }
+    .admin-action-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-glow);
+      box-shadow: var(--glow);
+    }
+    @media (max-width: 820px) {
+      .admin-main-card { grid-template-columns: 1fr; text-align: center; }
+      .admin-avatar-clean { margin: 0 auto; }
+      .admin-status-block { text-align: center; justify-items: center; }
+      .admin-mini-grid,
+      .admin-quick-actions { grid-template-columns: 1fr; }
+      .admin-quick-head { align-items: flex-start; flex-direction: column; }
+    }
+
+    /* ─── LIGHT MODE ─────────────────────────────────────────── */
+    body.light-mode {
+      --bg-deep:    #f0f4fb;
+      --bg-mid:     #e2eaf7;
+      --bg-panel:   rgba(220,232,255,0.85);
+      --bg-card:    rgba(255,255,255,0.80);
+      --border:     rgba(56,120,200,0.18);
+      --border-glow:rgba(56,120,200,0.40);
+      --accent:     #1d6fcf;
+      --accent2:    #4f46e5;
+      --accent3:    #0891b2;
+      --text:       #0f1e3a;
+      --muted:      #4a6080;
+      --glow:       0 0 18px rgba(56,120,200,0.20);
+      --shadow:     0 12px 40px rgba(0,0,0,0.10);
+      background: #f0f4fb;
+      color: #0f1e3a;
+    }
+    body.light-mode .page-bg {
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 10%, rgba(56,150,248,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 85% 90%, rgba(99,102,241,0.10) 0%, transparent 55%),
+        linear-gradient(160deg, #e8f0fb 0%, #edf2ff 100%);
+    }
+    body.light-mode .page-bg-grid {
+      background-image:
+        linear-gradient(rgba(56,120,200,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,120,200,0.06) 1px, transparent 1px);
+    }
+    body.light-mode .sidebar {
+      background: rgba(235,242,255,0.92);
+      border-right-color: rgba(56,120,200,0.15);
+    }
+    body.light-mode .glass-card {
+      background: rgba(255,255,255,0.85);
+      border-color: rgba(56,120,200,0.18);
+    }
+    body.light-mode .form-control {
+      background: rgba(56,120,200,0.06);
+      border-color: rgba(56,120,200,0.2);
+      color: #0f1e3a;
+    }
+    body.light-mode .log-item,
+    body.light-mode .info-item,
+    body.light-mode .setting-row {
+      background: rgba(56,120,200,0.05);
+      border-color: rgba(56,120,200,0.15);
+    }
+    body.light-mode .stat-card::before {
+      background: linear-gradient(135deg, rgba(56,120,200,0.07), rgba(99,102,241,0.04));
+    }
+
+    /* ─── SCROLLBAR ──────────────────────────────────────────── */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(56,189,248,0.25); border-radius:999px; }
+
+    /* ─── ANIMATIONS ─────────────────────────────────────────── */
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; }
+      50%      { opacity:0.4; }
+    }
+    .pulse { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width:1200px) {
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+      .content-grid, .control-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:860px) {
+      .sidebar {
+        left: -100%;
+        transition: left var(--trans);
+      }
+      .sidebar.open { left:0; }
+      .main { margin-left:0; width:100%; padding:16px; }
+      .mobile-menu { display:inline-flex !important; }
+      .stats-grid { grid-template-columns:1fr; }
+    }
+
+    /* HISTORY TABLE */
+    #historyTable tbody tr:hover td { background: rgba(56,189,248,0.04); }
+    #historyTable tbody td { vertical-align: middle; }
+    .capture-thumb {
+      width: 72px; height: 52px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .capture-thumb:hover { transform: scale(1.08); border-color: var(--border-glow); }
+    .no-thumb {
+      width: 72px; height: 52px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 1.2rem;
+    }
+    /* image modal */
+    .img-modal {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    .img-modal.open { display: flex; }
+    .img-modal img {
+      max-width: 90vw; max-height: 85vh;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 60px rgba(56,189,248,0.2);
+    }
+    .img-modal-close {
+      position: absolute; top: 20px; right: 28px;
+      font-size: 2rem; color: #fff; cursor: pointer; opacity: 0.7;
+    }
+    .img-modal-close:hover { opacity: 1; }
+
+    /* ACTIVE SUB-PAGE SECTIONS */
+    .sub-section { display:none; }
+    .sub-section.active { display:block; }
+
+    /* ─── NOTIFICATION BELL ──────────────────────────────────── */
+    .notif-wrap { position: relative; }
+    .notif-bell {
+      position: relative;
+      width: 42px; height: 42px;
+      border-radius: var(--radius-sm);
+      background: rgba(56,189,248,0.08);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: var(--trans);
+      flex-shrink: 0;
+    }
+    .notif-bell:hover { background: rgba(56,189,248,0.16); border-color: var(--border-glow); }
+    .notif-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      min-width: 18px; height: 18px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.68rem; font-weight: 700;
+      border-radius: 999px;
+      display: grid; place-items: center;
+      padding: 0 4px;
+      border: 2px solid var(--bg-deep);
+      display: none;
+    }
+    .notif-badge.show { display: grid; }
+
+    .notif-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 320px;
+      background: var(--bg-mid);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), 0 0 30px rgba(56,189,248,0.1);
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      display: none;
+      overflow: hidden;
+    }
+    .notif-dropdown.open { display: block; animation: fadeUp 0.2s ease both; }
+    .notif-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem; font-weight: 600;
+    }
+    .notif-clear {
+      font-size: 0.78rem; color: var(--accent); cursor: pointer; font-weight: 500;
+    }
+    .notif-clear:hover { text-decoration: underline; }
+    .notif-list { max-height: 340px; overflow-y: auto; }
+    .notif-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 13px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: var(--trans);
+      cursor: default;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: rgba(56,189,248,0.05); }
+    .notif-item.unread { background: rgba(56,189,248,0.06); }
+    .notif-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+    .notif-text strong { display: block; font-size: 0.88rem; margin-bottom: 3px; }
+    .notif-text span { font-size: 0.78rem; color: var(--muted); }
+    .notif-empty {
+      padding: 32px 16px; text-align: center;
+      color: var(--muted); font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── BACKGROUND ──────────────────────────────────────────── -->
+<div class="page-bg"></div>
+<div class="page-bg-grid"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 1: LOGIN
+════════════════════════════════════════════════════════════ -->
+<div class="page auth-page active" id="page-login">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="brand-icon">🚁</div>
+      <h1>UrbanEye</h1>
+      <p>UrbanEye Flight Dashboard</p>
+    </div>
+    <h2>Sign In</h2>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input class="form-control" type="email" id="loginEmail" placeholder="pilot@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input class="form-control" type="password" id="loginPass" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="doLogin()">
+      🔐 Log In
+    </button>
+    <div id="loginError" style="display:none; font-size:0.85rem; margin-top:10px;"></div>
+
+    <div class="auth-switch" style="margin-top:14px">
+      <a onclick="showPage('page-forgot')" style="color:var(--muted); font-size:0.83rem">Forgot password?</a>
+    </div>
+
+    <div class="auth-switch">
+      Don't have an account? <a onclick="showPage('page-signup')">Create one</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE: FORGOT PASSWORD
+════════════════════════════════════════════════════════════ -->
+<div class="page auth-page" id="page-forgot">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="brand-icon">🔑</div>
+      <h1>UrbanEye</h1>
+      <p>Reset your password</p>
+    </div>
+    <h2>Forgot Password</h2>
+
+    <!-- STEP 1: choose method -->
+    <div id="forgot-step1">
+      <p style="color:var(--muted); font-size:0.88rem; margin-bottom:20px;">
+        How would you like to receive your reset code?
+      </p>
+      <div style="display:grid; gap:12px; margin-bottom:22px;">
+        <button class="btn btn-secondary btn-full" onclick="forgotChoose('email')" style="justify-content:flex-start; gap:14px; padding:15px 18px;">
+          <span style="font-size:1.3rem">📧</span>
+          <div style="text-align:left">
+            <div style="font-weight:600; font-size:0.92rem;">Via Email</div>
+            <div style="font-size:0.78rem; color:var(--muted); font-weight:400">We'll send a reset link to your email</div>
+          </div>
+        </button>
+        <button class="btn btn-secondary btn-full" onclick="forgotChoosePhone()" style="justify-content:flex-start; gap:14px; padding:15px 18px;">
+          <span style="font-size:1.3rem">📱</span>
+          <div style="text-align:left">
+            <div style="font-weight:600; font-size:0.92rem;">Via Phone</div>
+            <div style="font-size:0.78rem; color:var(--muted); font-weight:400">We'll send the reset link to your account email</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: enter email or phone -->
+    <div id="forgot-step2" style="display:none;">
+      <div id="forgot-phone-note" style="display:none; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:0.83rem; color:var(--accent3);">
+        📱 Enter the email linked to your account and we'll send a reset link there.
+      </div>
+      <div class="form-group" id="forgot-email-group" style="display:none;">
+        <label>Email Address</label>
+        <input class="form-control" type="email" id="forgotEmail" placeholder="pilot@example.com">
+      </div>
+      <div class="form-group" id="forgot-phone-group" style="display:none;">
+        <label>Phone Number</label>
+        <input class="form-control" type="tel" id="forgotPhone" placeholder="+962 7X XXX XXXX">
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="forgotSend()">
+        📤 Send Reset Code
+      </button>
+      <div id="forgotError" style="display:none; font-size:0.85rem; margin-top:10px;"></div>
+      <div class="auth-switch" style="margin-top:14px">
+        <a onclick="forgotBack()" style="color:var(--muted); font-size:0.83rem">← Back</a>
+      </div>
+    </div>
+
+    <!-- STEP 3: success -->
+    <div id="forgot-step3" style="display:none; text-align:center;">
+      <div style="font-size:3rem; margin-bottom:16px;">✅</div>
+      <p style="font-weight:600; font-size:1rem; margin-bottom:8px;" id="forgot-success-msg">Reset link sent!</p>
+      <p style="color:var(--muted); font-size:0.85rem;" id="forgot-success-sub">Check your inbox and follow the instructions.</p>
+    </div>
+
+    <div class="auth-switch" style="margin-top:22px">
+      Remembered it? <a onclick="showPage('page-login')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 2: SIGNUP
+════════════════════════════════════════════════════════════ -->
+<div class="page auth-page" id="page-signup">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="brand-icon">🚁</div>
+      <h1>UrbanEye</h1>
+      <p>Create your operator account</p>
+    </div>
+    <h2>Create Account</h2>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <input class="form-control" type="text" placeholder="John Pilot">
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input class="form-control" type="email" id="signupEmail" placeholder="pilot@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input class="form-control" type="password" id="signupPass" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input class="form-control" type="password" id="signupConf" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="doSignup()">
+      ✅ Register & Enter
+    </button>
+    <div id="signupError" style="display:none; font-size:0.85rem; margin-top:10px;"></div>
+
+    <div class="auth-switch">
+      Already have an account? <a onclick="showPage('page-login')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 3: DASHBOARD (all inner pages share this layout)
+════════════════════════════════════════════════════════════ -->
+<div class="page dashboard-page" id="page-dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon-sm">🚁</div>
+      <div class="brand-text">
+        <h2>UrbanEye</h2>
+        <p>UrbanEye Flight Dashboard</p>
+      </div>
+    </div>
+
+    <div class="nav-title">Navigation</div>
+    <nav class="nav-links" id="navLinks">
+      <a class="active" data-section="dashboard" onclick="setNav('dashboard')">📊 Dashboard</a>
+      <a data-section="history"   onclick="setNav('history')">🕒 History</a>
+      <a data-section="profile"   onclick="setNav('profile')">🛡️ Admin</a>
+      <a data-section="plates"    onclick="setNav('plates')">🚗 Plates DB</a>
+      <a data-section="settings"  onclick="setNav('settings')">⚙️ Settings</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()">🚪 Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── TOPBAR ─────────────────────────────── -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-secondary drawer-toggle" id="menuBtn" title="Show / hide sidebar">☰</button>
+        <div class="page-heading">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Overview of drone status, system health, and mission summary.</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+
+        <!-- NOTIFICATION BELL -->
+        <div class="notif-wrap">
+          <div class="notif-bell" id="notifBell" onclick="toggleNotif()">
+            🔔
+            <span class="notif-badge" id="notifBadge">0</span>
+          </div>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+              <span>🔔 Notifications</span>
+              <span class="notif-clear" onclick="clearNotifs()">Clear all</span>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-empty" id="notifEmpty">No notifications yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <span class="badge success" id="topBadge"><span class="pulse">●</span> Connected</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════
+         SECTION: DASHBOARD
+    ════════════════════════ -->
+    <div class="sub-section active" id="sec-dashboard">
+
+      <section class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="stat-label">Distance Left</div>
+          <div class="stat-value" id="distanceValue">— m</div>
+          <div class="stat-footer">Meters remaining to destination</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-label">Altitude (AGL)</div>
+          <div class="stat-value" id="altitudeValue">— m</div>
+          <div class="stat-footer">Height above local ground</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-label">Speed</div>
+          <div class="stat-value" id="speedValue">— m/s</div>
+          <div class="stat-footer">Smoothed display speed</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-label">Status</div>
+          <div class="stat-value" id="flightStatus" style="font-size:1.3rem">Offline</div>
+          <div class="stat-footer" id="statusFooter">Waiting for backend</div>
+        </div>
+      </section>
+
+      <section class="start-hub" id="startHub">
+        <div class="glass-card start-hub-card">
+          <div class="start-center">
+            <button class="start-orb" id="mainStartButton" onclick="startDroneSystem()">
+              <div><span>🚁</span>Start<br>UrbanEye</div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="after-start" id="commandPanel">
+        <div class="glass-card card">
+          <div class="section-title"><div><h3>UrbanEye Command</h3><p>Send destination text or hover-control commands to the live drone backend</p></div></div>
+          <div class="command-inline-grid">
+            <div class="form-group command-input-wrap" style="margin-bottom:0">
+              <label>Command Text</label>
+              <input class="form-control" type="text" id="locationInput" placeholder="e.g. go to Sports City, move forward 10 meters, لف يمين 15 درجة...">
+            </div>
+            <button class="btn btn-primary" onclick="setLocation()">📤 Send</button>
+            <button class="btn mic-btn" id="voiceRecordButton" type="button" onclick="toggleVoiceRecording()" title="Record voice command, transcribe it with Whisper large-v3, and send it to UrbanEye">🎙️ Voice</button>
+            <button class="btn btn-danger" onclick="sendLandCommand()">🛬 Land</button>
+            <button class="btn btn-secondary" onclick="clearLocation()">✖ Clear</button>
+          </div>
+          <div id="currentLocationDisplay" style="margin-top:16px; display:none;">
+            <div class="info-item"><strong>Last Command / Backend Message</strong><span id="activeLocationText">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVESTREAM -->
+      <section class="after-start" id="liveStreamPanel">
+        <div class="glass-card card">
+          <div class="section-title">
+            <div><h3>🎥 Live Stream</h3></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <span class="badge success">PNG Bridge</span>
+              <span class="badge warning" id="cameraStatusBadge">Detection OFF</span>
+              <button class="btn btn-primary" id="detectToggleButton" onclick="toggleAiDetection()" style="font-size:0.82rem; padding:8px 13px;">▶ Start Detection</button>
+              <button class="btn btn-secondary" id="detectNowButton" onclick="analyzeCurrentFrameOnce()" style="font-size:0.82rem; padding:8px 13px;">📸 Analyze Now</button>
+            </div>
+          </div>
+          <div class="camera-frame">
+            <img id="livePngFrame" class="camera-live-img" alt="UrbanEye Unreal camera frame">
+            <div class="camera-placeholder" id="livePlaceholder">
+              <span class="cam-icon">🎥</span>
+              <span>Waiting for Unreal PNG frame...</span>
+            </div>
+            <div class="camera-overlay"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMPUTER VISION -->
+      <p class="footer-note">UrbanEye Monitoring System UI</p>
+    </div>
+
+    <!-- ════════════════════════
+         SECTION: HISTORY
+    ════════════════════════ -->
+    <div class="sub-section" id="sec-history">
+<section class="glass-card card">
+        <div class="section-title">
+          <div>
+            <h3>Capture History</h3>
+            <p>All detections and captures logged by the drone with timestamp and location</p>
+          </div>
+          <button class="btn btn-danger" onclick="clearHistory()" style="font-size:0.85rem; padding:10px 16px">🗑 Clear History</button>
+        </div>
+        <div class="table-wrap">
+          <table id="historyTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Image</th>
+                <th>GPS Coordinates</th>
+                <th>License Plate</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Violation</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr id="historyEmpty">
+                <td colspan="8" style="text-align:center; padding:32px; color:var(--muted); font-size:0.9rem;">
+                  No captures recorded yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════
+         SECTION: PROFILE
+    ════════════════════════ -->
+    <div class="sub-section" id="sec-profile">
+      <section class="admin-clean-wrap">
+        <div class="glass-card admin-main-card">
+          <div class="admin-avatar-clean">🛡️</div>
+          <div class="admin-title-block">
+            <span class="badge success">● Active Admin</span>
+            <h3 id="adminNameInfo">Account User</h3>
+            <p id="adminEmailInfo">—</p>
+          </div>
+          <div class="admin-status-block">
+            <span class="badge warning">Control Panel</span>
+            <p style="margin:0; color:var(--muted); font-size:0.82rem;">UrbanEye dashboard access</p>
+          </div>
+        </div>
+
+        <div class="admin-mini-grid">
+          <div class="admin-mini-card">
+            <strong>Account Name</strong>
+            <span id="adminAccountNameCard">Account User</span>
+          </div>
+          <div class="admin-mini-card">
+            <strong>Role</strong>
+            <span>System Admin</span>
+          </div>
+          <div class="admin-mini-card">
+            <strong>Assigned Drone</strong>
+            <span>DRN-2048</span>
+          </div>
+          <div class="admin-mini-card">
+            <strong>Account Status</strong>
+            <span>Enabled</span>
+          </div>
+        </div>
+
+        <div class="glass-card admin-quick-card">
+          <div class="admin-quick-head">
+            <div>
+              <h3>Quick Management</h3>
+              <p>Useful shortcuts for monitoring and reviewing drone records.</p>
+            </div>
+            <span class="badge success">Ready</span>
+          </div>
+          <div class="admin-quick-actions">
+            <button class="admin-action-btn" onclick="setNav('dashboard')">📊 Open Dashboard<small>View telemetry, live stream, and controls.</small></button>
+            <button class="admin-action-btn" onclick="setNav('history')">🕘 Review History<small>Check saved violation captures.</small></button>
+            <button class="admin-action-btn" onclick="setNav('plates')">🚘 Plates Database<small>Search plate and owner records.</small></button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════
+         SECTION: SETTINGS
+    ════════════════════════ -->
+    <div class="sub-section" id="sec-settings">
+      <section class="glass-card card" style="max-width:660px">
+        <div class="section-title"><div><h3>System Preferences</h3><p>Customize your dashboard experience</p></div></div>
+        <div class="settings-list">
+          <div class="setting-row">
+            <div>
+              <strong>Dark / Light Theme</strong>
+              <p>Switch between premium dark mode and clean light mode.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="themeToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <strong>Auto Return</strong>
+              <p>Return the drone automatically on low battery.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div>
+              <strong>GPS Logging</strong>
+              <p>Record flight path coordinates automatically.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════
+         SECTION: PLATES DB
+    ════════════════════════ -->
+    <div class="sub-section" id="sec-plates">
+
+      <!-- Search bar -->
+      <section class="glass-card card" style="margin-bottom:20px;">
+        <div class="section-title">
+          <div><h3>🚗 License Plate Lookup</h3><p>Search by plate number</p></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:end;">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Plate Number (e.g. 12-345-67)</label>
+            <input class="form-control" type="text" id="plateSearchInput" placeholder="Enter plate number..." oninput="searchPlate()" style="font-family:'Orbitron',sans-serif; letter-spacing:2px;">
+          </div>
+          <button class="btn btn-secondary" onclick="document.getElementById('plateSearchInput').value=''; searchPlate()">✕ Clear</button>
+        </div>
+      </section>
+
+      <!-- Result card -->
+      <div id="plateResult" style="display:none; margin-bottom:20px;">
+        <div class="glass-card card" style="border-color: rgba(34,197,94,0.35);">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <span style="font-size:1.5rem">✅</span>
+            <h3 style="font-size:1rem;">Owner Found</h3>
+            <span class="badge success" style="margin-left:auto;" id="plateResultBadge"></span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+            <div class="info-item"><strong>Full Name</strong><span id="res-name">—</span></div>
+            <div class="info-item"><strong>Phone</strong><span id="res-phone">—</span></div>
+            <div class="info-item"><strong>Address</strong><span id="res-address">—</span></div>
+            <div class="info-item"><strong>Plate Number</strong><span id="res-plate" style="font-family:'Orbitron',sans-serif; letter-spacing:2px; color:var(--accent);">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="plateNotFound" style="display:none; margin-bottom:20px;">
+        <div class="glass-card card" style="border-color:rgba(239,68,68,0.3); text-align:center; padding:28px;">
+          <div style="font-size:2.5rem; margin-bottom:10px;">🚫</div>
+          <p style="font-weight:600; margin-bottom:6px;">Plate Not Found</p>
+          <p style="color:var(--muted); font-size:0.88rem;">No record matches this plate number in the database.</p>
+        </div>
+      </div>
+
+      <!-- Full database table -->
+      <section class="glass-card card">
+        <div class="section-title">
+          <div><h3>📋 All Registered Plates</h3><p id="platesCountText">Loading...</p></div>
+          <button class="btn btn-secondary" style="font-size:0.82rem;" onclick="seedPlatesDB()">⬆ Seed DB (first time)</button>
+        </div>
+        <div class="table-wrap">
+          <table id="platesTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Plate</th>
+                <th>Full Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody id="platesBody">
+              <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted);">Loading database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<!-- ─── FIREBASE + SCRIPT ──────────────────────────────────────── -->
+<script type="module">
+  import { initializeApp }                          from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import { getAnalytics }                           from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    updatePassword,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    getDoc,
+    setDoc,
+    query,
+    orderBy,
+    serverTimestamp,
+    deleteDoc,
+    doc,
+    updateDoc,
+    where
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+  /* ── INIT ─────────────────────────────────────────────────── */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCCvWbJOj6KOlqN_tYU1MawjRDBdyhIdjo",
+    authDomain:        "dronesystem-61490.firebaseapp.com",
+    projectId:         "dronesystem-61490",
+    storageBucket:     "dronesystem-61490.firebasestorage.app",
+    messagingSenderId: "906241582363",
+    appId:             "1:906241582363:web:b1f54f503c1bac3526dfbe",
+    measurementId:     "G-2G3G6MXR49"
+  };
+  const app       = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth      = getAuth(app);
+  const db        = getFirestore(app);
+
+  /* ── URBANEYE LOCAL BACKEND API ───────────────────────────── */
+  const API_BASE = 'http://127.0.0.1:8000';
+  let telemetryTimer = null;
+  let cameraTimer = null;
+  let controlsRevealed = false;
+  let startRequested = false;
+  let latestStatusSnapshot = null;
+  let cvAutoTimer = null;
+  let cvAutoInFlight = false;
+  let cvDetectionActive = false;
+  const CV_SCAN_INTERVAL_MS = 1000;
+  let lastSavedCvFrameSignature = "";
+  // v25 quality tracker: one row per active car, but keep replacing the row
+  // if a later frame is better, closer, or has a readable/full plate.
+  let activeCvEventMap = new Map();
+  let cleanCvFramesInARow = 0;
+  const CV_CLEAR_FRAMES_TO_RESET = 2;
+  const CV_MIN_SCORE_IMPROVEMENT_TO_UPDATE = 80;
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  function setStartButtonState(state, phaseText='') {
+    const startBtn = document.getElementById('mainStartButton');
+    if (!startBtn) return;
+    startBtn.classList.remove('waiting', 'running');
+    startBtn.disabled = false;
+
+    if (state === 'connecting') {
+      startBtn.classList.add('waiting');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<div><span>🔌</span>Connecting<br>PX4</div>';
+    } else if (state === 'starting_px4') {
+      startBtn.classList.add('waiting');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<div><span>⚙️</span>Starting<br>PX4</div>';
+    } else if (state === 'waiting_px4') {
+      startBtn.classList.add('waiting');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<div><span>⏳</span>Waiting<br>PX4</div>';
+    } else if (state === 'takingoff') {
+      startBtn.classList.add('waiting');
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<div><span>🚁</span>Taking Off<br>to 50m</div>';
+    } else if (state === 'ready') {
+      startBtn.classList.add('running');
+      startBtn.innerHTML = '<div><span>✅</span>UrbanEye<br>Ready</div>';
+    } else if (state === 'error') {
+      startBtn.innerHTML = '<div><span>⚠️</span>Try<br>Again</div>';
+    } else {
+      startBtn.innerHTML = '<div><span>🚁</span>Start<br>UrbanEye</div>';
+    }
+  }
+
+  function startStateFromPhase(data) {
+    if (!data) return 'idle';
+    if (data.last_error || String(data.status || '').toLowerCase() === 'error') return 'error';
+    if (data.ready) return 'ready';
+
+    const phase = String(data.phase || data.status || '').toLowerCase();
+    if (phase.includes('taking off') || phase.includes('takeoff') || phase.includes('50m')) return 'takingoff';
+    if (phase.includes('starting px4')) return 'starting_px4';
+    if (phase.includes('waiting for px4') || phase.includes('boot')) return 'waiting_px4';
+    if (phase.includes('connected to px4') || phase.includes('connecting') || phase.includes('heartbeat') || phase.includes('home position') || phase.includes('airsim')) return 'connecting';
+    if (data.started) return 'connecting';
+    return 'idle';
+  }
+
+  async function waitUntilDroneReady() {
+    while (startRequested && !controlsRevealed) {
+      const data = await apiFetch('/api/status');
+      updateTelemetryUI(data);
+      setStartButtonState(startStateFromPhase(data), data.phase || data.status || '');
+      if (data.ready) {
+        revealFlightControls();
+        setBackendMessage('UrbanEye is ready. Send a destination or hover-control command.', true);
+        const input = document.getElementById('locationInput');
+        if (input) input.focus();
+        return data;
+      }
+      await sleep(1000);
+    }
+  }
+
+  function revealFlightControls() {
+    controlsRevealed = true;
+    const commandPanel = document.getElementById('commandPanel');
+    const livePanel = document.getElementById('liveStreamPanel');
+    if (commandPanel) commandPanel.classList.add('visible');
+    if (livePanel) livePanel.classList.add('visible');
+    setStartButtonState('ready');
+    startCameraPolling();
+  }
+
+  function startCameraPolling() {
+    if (cameraTimer) return;
+    const img = document.getElementById('livePngFrame');
+    const placeholder = document.getElementById('livePlaceholder');
+    const badge = document.getElementById('cameraStatusBadge');
+    if (!img) return;
+
+    img.onload = () => {
+      img.classList.add('active');
+      if (placeholder) placeholder.classList.add('hidden');
+      if (badge) {
+        badge.textContent = 'Live PNG';
+        badge.className = 'badge success';
+      }
+    };
+    img.onerror = () => {
+      if (badge) {
+        badge.textContent = 'Waiting for frame';
+        badge.className = 'badge warning';
+      }
+    };
+
+    const refresh = () => {
+      img.src = API_BASE + '/api/camera/frame.png?t=' + Date.now();
+    };
+    refresh();
+    cameraTimer = setInterval(refresh, 500);
+  }
+
+  /* ── BUTTON-CONTROLLED MODEL HISTORY CAPTURE ───────────────────────── */
+  async function startAutoCvMonitoring() {
+    if (cvAutoTimer) return;
+    cvDetectionActive = true;
+
+    // New manual session: reset duplicate memory in the browser and backend.
+    lastSavedCvFrameSignature = '';
+    activeCvEventMap.clear();
+    cleanCvFramesInARow = 0;
+    try {
+      await apiFetch('/api/cv/reset-session', { method: 'POST', body: '{}' });
+    } catch (e) {
+      console.warn('CV reset failed:', e);
+    }
+
+    const btn = document.getElementById('detectToggleButton');
+    if (btn) {
+      btn.innerHTML = '⏸ Stop Detection';
+      btn.className = 'btn btn-danger';
+    }
+    const badge = document.getElementById('cameraStatusBadge');
+    if (badge) {
+      badge.textContent = 'AI Detection ON';
+      badge.className = 'badge success';
+    }
+
+    // Try every 1 second. If the model is still processing, runAutoCvScanOnce skips that tick.
+    runAutoCvScanOnce();
+    cvAutoTimer = setInterval(runAutoCvScanOnce, CV_SCAN_INTERVAL_MS);
+  }
+
+  function stopAutoCvMonitoring() {
+    cvDetectionActive = false;
+    if (cvAutoTimer) {
+      clearInterval(cvAutoTimer);
+      cvAutoTimer = null;
+    }
+    const btn = document.getElementById('detectToggleButton');
+    if (btn) {
+      btn.innerHTML = '▶ Start Detection';
+      btn.className = 'btn btn-primary';
+    }
+    const badge = document.getElementById('cameraStatusBadge');
+    if (badge) {
+      badge.textContent = 'Detection OFF';
+      badge.className = 'badge warning';
+    }
+  }
+
+  window.toggleAiDetection = function() {
+    if (cvDetectionActive) stopAutoCvMonitoring();
+    else startAutoCvMonitoring();
+  };
+
+  function getBoxCenter(box) {
+    if (!Array.isArray(box) || box.length < 4) return { x: 0, y: 0 };
+    return {
+      x: (Number(box[0]) + Number(box[2])) / 2,
+      y: (Number(box[1]) + Number(box[3])) / 2,
+    };
+  }
+
+  function getBoxArea(box) {
+    if (!Array.isArray(box) || box.length < 4) return 0;
+    const w = Math.max(0, Number(box[2]) - Number(box[0]));
+    const h = Math.max(0, Number(box[3]) - Number(box[1]));
+    return w * h;
+  }
+
+  function getGpsBucket(pos) {
+    if (pos && pos.lat !== undefined && pos.lon !== undefined) {
+      const lat = Number(pos.lat);
+      const lon = Number(pos.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return lat.toFixed(4) + ',' + lon.toFixed(4);
+      }
+    }
+    return 'gps_unknown';
+  }
+
+  function eventCenterBucket(center) {
+    // Smaller bucket than v24 so two nearby cars can still become separate rows.
+    const x = Math.round(Number(center?.x || 0) / 90);
+    const y = Math.round(Number(center?.y || 0) / 90);
+    return x + ',' + y;
+  }
+
+  function getReadablePlateText(plate) {
+    const text = String(plate?.plate_number || '').trim();
+    if (!text || text.toLowerCase() === 'unreadable') return '';
+    return text;
+  }
+
+  function isFullJordanPlate(text) {
+    return /^\d{2}-\d{5}$/.test(String(text || '').trim());
+  }
+
+  function groupCvFrameIntoEvents(apiPayload) {
+    const result = apiPayload?.result || {};
+    const incidents = Array.isArray(result.incidents) ? result.incidents : [];
+    const plates = Array.isArray(result.license_plates) ? result.license_plates : [];
+    const gpsBucket = getGpsBucket(apiPayload?.position || {});
+
+    const plateObjs = plates.map((plate, index) => ({
+      ...plate,
+      _index: index,
+      _center: getBoxCenter(plate.box),
+      _area: getBoxArea(plate.box),
+      _readableText: getReadablePlateText(plate),
+    }));
+
+    const events = [];
+
+    for (const incident of incidents) {
+      const incidentType = String(incident?.type || 'incident detected').trim() || 'incident detected';
+      const incidentCenter = getBoxCenter(incident?.box);
+
+      let bestPlate = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      for (const plate of plateObjs) {
+        const dx = plate._center.x - incidentCenter.x;
+        const dy = plate._center.y - incidentCenter.y;
+        const dist = (dx * dx) + (dy * dy);
+        if (dist < bestDistance) {
+          bestDistance = dist;
+          bestPlate = plate;
+        }
+      }
+
+      // Tracking key is intentionally NOT based on the plate text.
+      // This lets us replace an old unreadable/partial row when the same car
+      // later becomes closer and the plate becomes readable.
+      const trackCenter = bestPlate ? bestPlate._center : incidentCenter;
+      const centerBucket = eventCenterBucket(trackCenter);
+      const trackKey = [
+        'gps=' + gpsBucket,
+        'spot=' + centerBucket,
+        'inc=' + incidentType,
+      ].join(';');
+
+      let group = events.find(ev => ev.trackKey === trackKey);
+      if (!group) {
+        const readablePlate = bestPlate ? bestPlate._readableText : '';
+        group = {
+          trackKey,
+          centerBucket,
+          plateKey: readablePlate,
+          licensePlate: readablePlate || 'Unreadable / manual review',
+          plateReadStatus: readablePlate ? 'readable' : 'manual_review',
+          incidentTypes: [],
+          incidents: [],
+          plateBox: bestPlate?.box || [],
+          primaryBox: incident?.box || bestPlate?.box || [],
+          plateArea: bestPlate?._area || 0,
+          incidentArea: getBoxArea(incident?.box),
+          ocrConfidence: Number(bestPlate?.ocr_confidence || 0),
+          plateDetectionConfidence: Number(bestPlate?.detection_confidence || 0),
+          incidentConfidence: Number(incident?.confidence || 0),
+        };
+        events.push(group);
+      }
+
+      group.incidents.push(incident);
+      if (!group.incidentTypes.includes(incidentType)) {
+        group.incidentTypes.push(incidentType);
+      }
+      group.incidentArea = Math.max(group.incidentArea || 0, getBoxArea(incident?.box));
+      group.incidentConfidence = Math.max(group.incidentConfidence || 0, Number(incident?.confidence || 0));
+
+      // If this later incident is paired with a better/readable plate, upgrade the event.
+      const readablePlate = bestPlate ? bestPlate._readableText : '';
+      const currentFull = isFullJordanPlate(group.plateKey);
+      const newFull = isFullJordanPlate(readablePlate);
+      const shouldUpgradePlate =
+        (readablePlate && !group.plateKey) ||
+        (newFull && !currentFull) ||
+        (readablePlate && (Number(bestPlate?.ocr_confidence || 0) > Number(group.ocrConfidence || 0) + 5));
+
+      if (shouldUpgradePlate) {
+        group.plateKey = readablePlate;
+        group.licensePlate = readablePlate;
+        group.plateReadStatus = 'readable';
+        group.plateBox = bestPlate?.box || [];
+        group.plateArea = bestPlate?._area || 0;
+        group.ocrConfidence = Number(bestPlate?.ocr_confidence || 0);
+        group.plateDetectionConfidence = Number(bestPlate?.detection_confidence || 0);
+      }
+    }
+
+    return events.map((event, index) => {
+      const plateBonus = event.plateKey
+        ? (isFullJordanPlate(event.plateKey) ? 25000 : 12000)
+        : 0;
+      const qualityScore =
+        plateBonus +
+        (Number(event.plateArea || 0) * 0.8) +
+        (Number(event.incidentArea || 0) * 0.08) +
+        (Number(event.ocrConfidence || 0) * 25) +
+        (Number(event.plateDetectionConfidence || 0) * 8) +
+        (Number(event.incidentConfidence || 0) * 6);
+
+      return {
+        ...event,
+        qualityScore,
+        order: index,
+      };
+    });
+  }
+
+  async function runAutoCvScanOnce(forceSingle=false) {
+    if (!forceSingle && !cvDetectionActive) return;
+    if (cvAutoInFlight) {
+      const badge = document.getElementById('cameraStatusBadge');
+      if (badge && forceSingle) {
+        badge.textContent = 'AI already analyzing...';
+        badge.className = 'badge warning';
+      }
+      return;
+    }
+
+    cvAutoInFlight = true;
+    const badgeBusy = document.getElementById('cameraStatusBadge');
+    const detectNowBtn = document.getElementById('detectNowButton');
+    if (detectNowBtn) detectNowBtn.disabled = true;
+    if (badgeBusy) {
+      badgeBusy.textContent = forceSingle ? 'Snapshot analyzing...' : 'AI analyzing...';
+      badgeBusy.className = 'badge warning';
+    }
+
+    try {
+      const data = await apiFetch('/api/cv/analyze-current-frame', {
+        method: 'POST',
+        body: JSON.stringify({ force: Boolean(forceSingle) })
+      });
+
+      if (!data || data.skipped) {
+        const badge = document.getElementById('cameraStatusBadge');
+        if (badge) {
+          if (forceSingle) {
+            badge.textContent = data?.reason === 'same_frame_already_analyzed' ? 'Same frame already analyzed' : 'No new frame';
+          } else if (cvDetectionActive) {
+            badge.textContent = data?.reason === 'same_frame_already_analyzed' ? 'Waiting for new frame' : 'AI Detection ON';
+          } else {
+            badge.textContent = 'Detection OFF';
+          }
+          badge.className = 'badge warning';
+        }
+        return;
+      }
+
+      const result = data.result || {};
+      const summary = result.summary || {};
+      const incidents = result.incidents || [];
+      const hasViolation = Boolean(summary.violation_detected) || incidents.length > 0;
+
+      // Only violations go to Capture History. Plate-only scans are ignored.
+      if (!hasViolation) {
+        cleanCvFramesInARow += 1;
+        if (cleanCvFramesInARow >= CV_CLEAR_FRAMES_TO_RESET) {
+          activeCvEventMap.clear();
+        }
+        const badge = document.getElementById('cameraStatusBadge');
+        if (badge && forceSingle) {
+          badge.textContent = 'No violation found';
+          badge.className = 'badge success';
+        }
+        return;
+      }
+
+      cleanCvFramesInARow = 0;
+
+      // If the Unreal bridge gives literally the same PNG again, skip duplicate History save.
+      // Force-single still analyzes the snapshot, but does not create duplicate History rows.
+      const sig = data.frame_signature || summary.timestamp || JSON.stringify(summary);
+      if (sig && sig === lastSavedCvFrameSignature) {
+        const badge = document.getElementById('cameraStatusBadge');
+        if (badge && forceSingle) {
+          badge.textContent = 'Violation detected, already saved';
+          badge.className = 'badge success';
+        }
+        return;
+      }
+
+      const groupedEvents = groupCvFrameIntoEvents(data);
+      if (!groupedEvents.length) return;
+
+      const eventsToCreate = [];
+      const eventsToUpdate = [];
+
+      for (const event of groupedEvents) {
+        const previous = activeCvEventMap.get(event.trackKey);
+        if (!previous) {
+          eventsToCreate.push(event);
+          continue;
+        }
+
+        const plateImproved = previous.plateReadStatus !== 'readable' && event.plateReadStatus === 'readable';
+        const becameFullPlate = !isFullJordanPlate(previous.licensePlate) && isFullJordanPlate(event.licensePlate);
+        const scoreImproved = Number(event.qualityScore || 0) > Number(previous.qualityScore || 0) + CV_MIN_SCORE_IMPROVEMENT_TO_UPDATE;
+
+        if (plateImproved || becameFullPlate || scoreImproved) {
+          eventsToUpdate.push({ ...event, docId: previous.docId });
+        }
+      }
+
+      if (!eventsToCreate.length && !eventsToUpdate.length) return;
+
+      lastSavedCvFrameSignature = sig;
+      await saveOrUpdateAutoCvEventsInHistory(data, eventsToCreate, eventsToUpdate);
+      const badge = document.getElementById('cameraStatusBadge');
+      if (badge && forceSingle) {
+        badge.textContent = 'Snapshot saved to History';
+        badge.className = 'badge success';
+      }
+    } catch (e) {
+      const badge = document.getElementById('cameraStatusBadge');
+      if (badge) {
+        badge.textContent = forceSingle ? 'Snapshot error' : (cvDetectionActive ? 'AI error / waiting' : 'Detection OFF');
+        badge.className = 'badge warning';
+      }
+      console.error('AI analysis failed:', e);
+    } finally {
+      cvAutoInFlight = false;
+      if (detectNowBtn) detectNowBtn.disabled = false;
+    }
+  }
+
+  window.analyzeCurrentFrameOnce = async function() {
+    // Refresh the displayed PNG first, then force the backend to analyze the latest in-memory frame.
+    const img = document.getElementById('livePngFrame');
+    if (img) img.src = API_BASE + '/api/camera/frame.png?t=' + Date.now();
+    const badge = document.getElementById('cameraStatusBadge');
+    if (badge) {
+      badge.textContent = 'Capturing latest frame...';
+      badge.className = 'badge warning';
+    }
+    await sleep(200);
+    await runAutoCvScanOnce(true);
+  };
+
+  function formatGpsFromPosition(pos) {
+    if (pos && pos.lat !== undefined && pos.lon !== undefined) {
+      const lat = Number(pos.lat);
+      const lon = Number(pos.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return lat.toFixed(6) + ', ' + lon.toFixed(6);
+      }
+      return String(pos.lat) + ', ' + String(pos.lon);
+    }
+    return '—';
+  }
+
+  function loadImageForCanvas(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function clampBoxToImage(box, width, height) {
+    if (!Array.isArray(box) || box.length < 4) return null;
+    const x1 = Math.max(0, Math.min(width, Number(box[0]) || 0));
+    const y1 = Math.max(0, Math.min(height, Number(box[1]) || 0));
+    const x2 = Math.max(0, Math.min(width, Number(box[2]) || 0));
+    const y2 = Math.max(0, Math.min(height, Number(box[3]) || 0));
+    if (x2 <= x1 || y2 <= y1) return null;
+    return [x1, y1, x2, y2];
+  }
+
+  function drawLabeledBox(ctx, box, label, color) {
+    const safe = clampBoxToImage(box, ctx.canvas.width, ctx.canvas.height);
+    if (!safe) return;
+    const [x1, y1, x2, y2] = safe;
+    const w = x2 - x1;
+    const h = y2 - y1;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(3, Math.round(ctx.canvas.width / 320));
+    ctx.strokeRect(x1, y1, w, h);
+
+    const text = String(label || '').trim();
+    if (text) {
+      const fontSize = Math.max(15, Math.round(ctx.canvas.width / 42));
+      ctx.font = '700 ' + fontSize + 'px Arial';
+      const padding = Math.max(5, Math.round(fontSize * 0.35));
+      const textWidth = ctx.measureText(text).width;
+      const labelHeight = fontSize + padding * 2;
+      const labelY = Math.max(0, y1 - labelHeight);
+      ctx.fillStyle = color;
+      ctx.fillRect(x1, labelY, Math.min(ctx.canvas.width - x1, textWidth + padding * 2), labelHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, x1 + padding, labelY + fontSize + padding * 0.4);
+    }
+    ctx.restore();
+  }
+
+  async function makeAnnotatedHistoryImage(apiPayload, event) {
+    // v56: Do not draw model bounding boxes. The boxes are not accurate enough
+    // for the dashboard, so History now stores the clean original snapshot.
+    return apiPayload.image_data_url || '';
+  }
+
+  async function buildCvHistoryRecord(apiPayload, event, pos, safeNow) {
+    const result = apiPayload.result || {};
+    const summary = result.summary || {};
+    const eventLabel = 'Violation';
+    const annotatedImage = await makeAnnotatedHistoryImage(apiPayload, event);
+    return {
+      event: '🚨 ' + eventLabel,
+      location: apiPayload.target_name || currentLocation || 'UrbanEye latest frame',
+      gpsCoordinates: formatGpsFromPosition(pos),
+      licensePlate: event.licensePlate,
+      plateReadStatus: event.plateReadStatus,
+      date: safeNow.toLocaleDateString('en-GB'),
+      time: safeNow.toLocaleTimeString('en-GB'),
+      badge: 'warning',
+      image: annotatedImage || apiPayload.image_data_url || '',
+      rawImage: apiPayload.image_data_url || '',
+      cvSummary: summary,
+      cvIncidents: event.incidents,
+      cvIncidentTypes: event.incidentTypes,
+      cvEventKey: event.trackKey,
+      cvQualityScore: Number(event.qualityScore || 0),
+      cvBoundingBoxes: {
+        incidents: event.incidents || [],
+        plateBox: event.plateBox || [],
+        primaryBox: event.primaryBox || []
+      },
+      timestamp: serverTimestamp()
+    };
+  }
+
+  async function saveOrUpdateAutoCvEventsInHistory(apiPayload, eventsToCreate, eventsToUpdate) {
+    const result = apiPayload.result || {};
+    const summary = result.summary || {};
+    const now = summary.timestamp ? new Date(summary.timestamp) : new Date();
+    const safeNow = Number.isNaN(now.getTime()) ? new Date() : now;
+
+    let pos = apiPayload.position;
+    if (!pos) {
+      try {
+        const status = await apiFetch('/api/status');
+        pos = status.position;
+      } catch (e) {
+        pos = null;
+      }
+    }
+
+    for (const event of eventsToCreate) {
+      const record = await buildCvHistoryRecord(apiPayload, event, pos, safeNow);
+      const created = await addDoc(collection(db, 'history'), record);
+      activeCvEventMap.set(event.trackKey, {
+        docId: created.id,
+        qualityScore: Number(event.qualityScore || 0),
+        licensePlate: event.licensePlate,
+        plateReadStatus: event.plateReadStatus,
+      });
+    }
+
+    for (const event of eventsToUpdate) {
+      const record = await buildCvHistoryRecord(apiPayload, event, pos, safeNow);
+      await updateDoc(doc(db, 'history', event.docId), record);
+      activeCvEventMap.set(event.trackKey, {
+        docId: event.docId,
+        qualityScore: Number(event.qualityScore || 0),
+        licensePlate: event.licensePlate,
+        plateReadStatus: event.plateReadStatus,
+      });
+    }
+
+    await loadHistory();
+
+    const badge = document.getElementById('cameraStatusBadge');
+    if (badge) {
+      badge.textContent = cvDetectionActive ? 'AI Detection ON' : 'Detection OFF';
+      badge.className = 'badge success';
+    }
+
+    if (eventsToCreate.length || eventsToUpdate.length) {
+      const createdText = eventsToCreate.length ? `${eventsToCreate.length} new` : '';
+      const updatedText = eventsToUpdate.length ? `${eventsToUpdate.length} improved` : '';
+      pushNotif('🚨', 'Violation Capture Updated', [createdText, updatedText].filter(Boolean).join(' / '));
+    }
+  }
+
+  /* ── COMPUTER VISION API BRIDGE ──────────────────────────── */
+  let lastCvResult = null;
+  let lastCvImageDataUrl = '';
+
+  function setCvStatus(label, state='warning') {
+    const badge = document.getElementById('cvStatusBadge');
+    if (!badge) return;
+    badge.textContent = label;
+    badge.className = 'badge ' + state;
+  }
+
+  function setCvMessage(message, ok=true) {
+    const el = document.getElementById('cvMessage');
+    if (!el) return;
+    el.textContent = message;
+    el.style.color = ok ? 'var(--accent3)' : '#ff9e9e';
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function getReadablePlateNumbers(result) {
+    const summary = result?.summary || {};
+    const fromSummary = summary.plate_numbers || summary.full_plate_numbers || [];
+    if (fromSummary.length) return fromSummary;
+    return (result?.license_plates || [])
+      .map(p => p.plate_number)
+      .filter(p => p && p !== 'unreadable');
+  }
+
+  function renderCvResult(apiPayload) {
+    const result = apiPayload?.result || apiPayload || {};
+    lastCvResult = result;
+
+    const summary = result.summary || {};
+    const incidents = result.incidents || [];
+    const plates = result.license_plates || [];
+
+    document.getElementById('cvViolationValue').textContent = summary.violation_detected ? 'YES' : 'NO';
+    document.getElementById('cvIncidentCount').textContent = summary.incidents_detected ?? incidents.length ?? 0;
+    document.getElementById('cvPlateCount').textContent = summary.plates_detected ?? plates.length ?? 0;
+    document.getElementById('cvReadableCount').textContent = summary.readable_plates_detected ?? getReadablePlateNumbers(result).length;
+    document.getElementById('cvDeviceValue').textContent = summary.device || '—';
+    document.getElementById('cvTimeValue').textContent = summary.processing_time_seconds !== undefined ? summary.processing_time_seconds + 's' : '—';
+
+    const incidentsBox = document.getElementById('cvIncidentsList');
+    if (incidents.length === 0) {
+      incidentsBox.innerHTML = '<div class="cv-empty">No incidents detected.</div>';
+    } else {
+      incidentsBox.innerHTML = incidents.map(item => `
+        <div class="cv-result-box">
+          <b>${escapeHtml(item.type || 'incident')}</b><br>
+          Confidence: ${escapeHtml(item.confidence ?? 'N/A')}%<br>
+          Box: [${(item.box || []).map(x => escapeHtml(x)).join(', ')}]
+        </div>
+      `).join('');
+    }
+
+    const platesBox = document.getElementById('cvPlatesList');
+    if (plates.length === 0) {
+      platesBox.innerHTML = '<div class="cv-empty">No license plates detected.</div>';
+    } else {
+      platesBox.innerHTML = plates.map(p => {
+        const plate = p.plate_number || 'unreadable';
+        const plateHtml = plate !== 'unreadable'
+          ? `<button class="plate-link" onclick="openPlateFromCv('${encodeURIComponent(plate)}')">${escapeHtml(plate)}</button>`
+          : '<span style="color:var(--muted)">unreadable</span>';
+        return `
+          <div class="cv-result-box">
+            <b>Plate:</b> ${plateHtml}<br>
+            Detection Confidence: ${escapeHtml(p.detection_confidence ?? 'N/A')}%<br>
+            OCR Confidence: ${escapeHtml(p.ocr_confidence ?? 'N/A')}%<br>
+            OCR Status: ${escapeHtml(p.ocr_status || 'N/A')}<br>
+            Method: ${escapeHtml(p.ocr_method || 'N/A')}
+          </div>
+        `;
+      }).join('');
+    }
+
+    const saveBtn = document.getElementById('cvSaveHistoryBtn');
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
+
+    const plateNumbers = getReadablePlateNumbers(result);
+    if (summary.violation_detected || incidents.length || plateNumbers.length) {
+      pushNotif('👁️', 'AI Detection Complete', plateNumbers.length ? 'Plate: ' + plateNumbers.join(', ') : 'Incident detected');
+    } else {
+      pushNotif('👁️', 'AI Scan Complete', 'No incident or readable plate detected');
+    }
+  }
+
+  window.checkCvApiHealth = async function() {
+    try {
+      const data = await apiFetch('/api/cv/health');
+      if (data.ok) {
+        const cv = data.cv_api || {};
+        setCvStatus('AI Detection Ready', 'success');
+        setCvMessage('AI detection connected: ' + (cv.api_version || 'running'), true);
+      } else {
+        setCvStatus('AI Detection Offline', 'danger');
+        setCvMessage('AI detection service is not reachable at ' + (data.cv_api_base || 'http://127.0.0.1:5000'), false);
+      }
+      return data;
+    } catch(e) {
+      setCvStatus('AI Detection Offline', 'danger');
+      setCvMessage('AI detection health check failed: ' + e.message, false);
+      throw e;
+    }
+  };
+
+  window.analyzeCurrentFrameCV = async function() {
+    setCvStatus('Analyzing...', 'warning');
+    setCvMessage('Sending current Unreal frame to AI Detection...', true);
+    lastCvImageDataUrl = '';
+    try {
+      const data = await apiFetch('/api/cv/analyze-current-frame', {
+        method: 'POST',
+        body: '{}'
+      });
+      setCvStatus('AI Result Ready', 'success');
+      setCvMessage('Current frame analysis complete.', true);
+      renderCvResult(data);
+    } catch(e) {
+      setCvStatus('AI Failed', 'danger');
+      setCvMessage('Current frame analysis failed: ' + e.message, false);
+    }
+  };
+
+  window.analyzeUploadedImageCV = async function() {
+    const input = document.getElementById('cvImageUpload');
+    const file = input?.files?.[0];
+    if (!file) {
+      setCvMessage('Choose an image first.', false);
+      return;
+    }
+
+    setCvStatus('Analyzing...', 'warning');
+    setCvMessage('Sending uploaded image to AI Detection...', true);
+
+    try {
+      lastCvImageDataUrl = await fileToDataUrl(file);
+      const res = await fetch(API_BASE + '/api/cv/analyze-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'image/png' },
+        body: file
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || data.message || 'CV upload analysis failed');
+
+      setCvStatus('AI Result Ready', 'success');
+      setCvMessage('Uploaded image analysis complete.', true);
+      renderCvResult(data);
+    } catch(e) {
+      setCvStatus('AI Failed', 'danger');
+      setCvMessage('Uploaded image analysis failed: ' + e.message, false);
+    }
+  };
+
+  window.openPlateFromCv = async function(encodedPlate) {
+    const plate = decodeURIComponent(encodedPlate || '').trim();
+    if (!plate) return;
+    setNav('plates');
+    await loadPlates();
+    const input = document.getElementById('plateSearchInput');
+    if (input) {
+      input.value = plate;
+      await window.searchPlate();
+      input.focus();
+    }
+  };
+
+  window.saveLastCvResultToHistory = async function() {
+    if (!lastCvResult) {
+      setCvMessage('No AI result to save yet.', false);
+      return;
+    }
+
+    const now = new Date();
+    const summary = lastCvResult.summary || {};
+    const plateNumbers = getReadablePlateNumbers(lastCvResult);
+    const incidentTypes = summary.incident_types || (lastCvResult.incidents || []).map(i => i.type).filter(Boolean);
+
+    let gpsText = '—';
+    try {
+      const status = await apiFetch('/api/status');
+      const pos = status.position;
+      if (pos && pos.lat !== undefined && pos.lon !== undefined) {
+        gpsText = Number(pos.lat).toFixed(6) + ', ' + Number(pos.lon).toFixed(6);
+      }
+    } catch(e) {
+      // keep gps as unknown if backend status is unavailable
+    }
+
+    const hasIncident = Boolean(summary.violation_detected) || (lastCvResult.incidents || []).length > 0;
+    const eventLabel = hasIncident
+      ? 'Violation'
+      : (plateNumbers.length ? 'Plate Detected' : 'Scan');
+
+    const record = {
+      event: (hasIncident ? '🚨 ' : '👁️ ') + eventLabel,
+      location: currentLocation || 'UrbanEye camera frame',
+      gpsCoordinates: gpsText,
+      licensePlate: plateNumbers.join(', '),
+      date: now.toLocaleDateString('en-GB'),
+      time: now.toLocaleTimeString('en-GB'),
+      badge: hasIncident ? 'warning' : 'success',
+      image: lastCvImageDataUrl || '',
+      cvSummary: summary,
+      timestamp: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, 'history'), record);
+      await loadHistory();
+      setCvMessage('AI result saved to history.', true);
+      pushNotif('💾', 'AI Result Saved', plateNumbers.length ? plateNumbers.join(', ') : 'Violation');
+    } catch(e) {
+      setCvMessage('Could not save AI result to history: ' + e.message, false);
+    }
+  };
+
+  function fmtMeters(value) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '— m';
+    const n = Number(value);
+    return n >= 1000 ? (n / 1000).toFixed(2) + ' km' : n.toFixed(1) + ' m';
+  }
+  function fmtSpeed(value) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '— m/s';
+    return Number(value).toFixed(1) + ' m/s';
+  }
+  function setBackendMessage(message, ok=true) {
+    const display = document.getElementById('currentLocationDisplay');
+    const text = document.getElementById('activeLocationText');
+    if (!display || !text) return;
+    text.textContent = message;
+    text.style.color = ok ? 'var(--accent3)' : '#ff9e9e';
+    display.style.display = 'block';
+  }
+  async function apiFetch(path, options={}) {
+    const res = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || data.message || 'Backend request failed');
+    return data;
+  }
+  function updateTelemetryUI(data) {
+    latestStatusSnapshot = data || null;
+    document.getElementById('distanceValue').textContent = fmtMeters(data.distance_left_m);
+    document.getElementById('altitudeValue').textContent = fmtMeters(data.agl_m);
+    document.getElementById('speedValue').textContent = fmtSpeed(data.speed_mps);
+    document.getElementById('flightStatus').textContent = data.status || 'Unknown';
+    const footer = document.getElementById('statusFooter');
+    if (footer) footer.textContent = data.target_name ? ('Target: ' + data.target_name) : (data.last_command ? ('Last command: ' + data.last_command) : 'UrbanEye backend');
+
+    const backendMsg = String(data.last_command_message || '').trim();
+    if (backendMsg && controlsRevealed) {
+      const badMsg = /could not|couldn't|failed|error|unsupported|not found|not reached/i.test(backendMsg);
+      setBackendMessage(backendMsg, !badMsg);
+    }
+
+    const badge = document.getElementById('topBadge');
+    if (data.ready && !controlsRevealed && startRequested) revealFlightControls();
+    if (data.started && !data.ready && startRequested && !controlsRevealed) setStartButtonState(startStateFromPhase(data), data.phase || data.status || '');
+
+    if (badge && document.getElementById('sec-dashboard').classList.contains('active')) {
+      if (data.ready) {
+        badge.innerHTML = '<span class="pulse">●</span> Backend Ready';
+        badge.className = 'badge success';
+        badge.style.display = '';
+      } else if (data.started) {
+        badge.innerHTML = '⏳ ' + (data.phase || data.status || 'Starting');
+        badge.className = 'badge warning';
+        badge.style.display = '';
+      } else {
+        badge.innerHTML = 'Backend Offline';
+        badge.className = 'badge danger';
+        badge.style.display = '';
+      }
+    }
+  }
+  async function pollTelemetry() {
+    try {
+      const data = await apiFetch('/api/status');
+      updateTelemetryUI(data);
+    } catch (e) {
+      document.getElementById('distanceValue').textContent = '— m';
+      document.getElementById('altitudeValue').textContent = '— m';
+      document.getElementById('speedValue').textContent = '— m/s';
+      document.getElementById('flightStatus').textContent = 'Offline';
+      const footer = document.getElementById('statusFooter');
+      if (footer) footer.textContent = 'Start urbaneye_web_backend.py';
+      const badge = document.getElementById('topBadge');
+      if (badge && document.getElementById('sec-dashboard').classList.contains('active')) {
+        badge.innerHTML = 'Backend Offline';
+        badge.className = 'badge danger';
+        badge.style.display = '';
+      }
+    }
+  }
+  function startTelemetryPolling() {
+    if (telemetryTimer) return;
+    pollTelemetry();
+    telemetryTimer = setInterval(pollTelemetry, 1000);
+  }
+
+  /* ── HELPERS ──────────────────────────────────────────────── */
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  window.showPage = showPage;
+
+  function showError(elId, msg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.color = '#ff9e9e';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+  function showSuccess(elId, msg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.color = '#9df7b5';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+
+  function accountNameFromEmail(email) {
+    const raw = String(email || '').split('@')[0] || 'Account User';
+    return raw
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, c => c.toUpperCase()) || 'Account User';
+  }
+
+  function getAccountDisplayName(user) {
+    if (!user) return 'Account User';
+    const profileName = String(user.displayName || '').trim();
+    if (profileName) return profileName;
+    return accountNameFromEmail(user.email);
+  }
+
+  function updateAdminInfo(user) {
+    const nameEl = document.getElementById('adminNameInfo');
+    const emailEl = document.getElementById('adminEmailInfo');
+    const cardNameEl = document.getElementById('adminAccountNameCard');
+    const accountName = getAccountDisplayName(user);
+    if (nameEl) nameEl.textContent = accountName;
+    if (cardNameEl) cardNameEl.textContent = accountName;
+    if (emailEl) emailEl.textContent = (user && user.email) ? user.email : '—';
+  }
+
+  /* ── AUTH STATE ───────────────────────────────────────────── */
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      updateAdminInfo(user);
+      showPage('page-dashboard');
+      setNav('dashboard');
+      loadHistory();
+      startTelemetryPolling();
+    } else {
+      showPage('page-login');
+    }
+  });
+
+  /* ── LOGIN ────────────────────────────────────────────────── */
+  window.doLogin = async function() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value;
+    if (!email || !pass) { showError('loginError', '⚠ Please enter email and password.'); return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      const msgs = {
+        'auth/user-not-found':  '⚠ No account found with this email.',
+        'auth/wrong-password':  '⚠ Incorrect password.',
+        'auth/invalid-email':   '⚠ Invalid email address.',
+        'auth/invalid-credential': '⚠ Invalid email or password.'
+      };
+      showError('loginError', msgs[e.code] || '⚠ ' + e.message);
+    }
+  };
+
+  /* ── SIGNUP ───────────────────────────────────────────────── */
+  window.doSignup = async function() {
+    const email = document.getElementById('signupEmail').value.trim();
+    const pass  = document.getElementById('signupPass').value;
+    const conf  = document.getElementById('signupConf').value;
+    if (!email || !pass) { showError('signupError', '⚠ Please fill all fields.'); return; }
+    if (pass !== conf)   { showError('signupError', '⚠ Passwords do not match.'); return; }
+    if (pass.length < 6) { showError('signupError', '⚠ Password must be at least 6 characters.'); return; }
+    try {
+      await createUserWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      const msgs = {
+        'auth/email-already-in-use': '⚠ This email is already registered.',
+        'auth/invalid-email':        '⚠ Invalid email address.',
+        'auth/weak-password':        '⚠ Password is too weak.'
+      };
+      showError('signupError', msgs[e.code] || '⚠ ' + e.message);
+    }
+  };
+
+  /* ── LOGOUT ───────────────────────────────────────────────── */
+  window.doLogout = async function() {
+    await signOut(auth);
+  };
+
+  /* ── FORGOT PASSWORD ──────────────────────────────────────── */
+  let forgotMethod = '';
+  window.forgotChoose = function(method) {
+    forgotMethod = method;
+    document.getElementById('forgot-step1').style.display = 'none';
+    document.getElementById('forgot-step2').style.display = 'block';
+    document.getElementById('forgot-phone-note').style.display = 'none';
+    document.getElementById('forgot-email-group').style.display = method === 'email' ? 'grid' : 'none';
+    document.getElementById('forgot-phone-group').style.display = method === 'phone' ? 'grid' : 'none';
+  };
+  window.forgotChoosePhone = function() {
+    forgotMethod = 'email';
+    document.getElementById('forgot-step1').style.display = 'none';
+    document.getElementById('forgot-step2').style.display = 'block';
+    document.getElementById('forgot-phone-note').style.display = 'block';
+    document.getElementById('forgot-email-group').style.display = 'grid';
+    document.getElementById('forgot-phone-group').style.display = 'none';
+  };
+  window.forgotBack = function() {
+    document.getElementById('forgot-step1').style.display = 'block';
+    document.getElementById('forgot-step2').style.display = 'none';
+    document.getElementById('forgot-step3').style.display = 'none';
+  };
+  window.forgotSend = async function() {
+    if (forgotMethod === 'email') {
+      const email = document.getElementById('forgotEmail').value.trim();
+      if (!email) { showError('forgotError', '⚠ Please enter your email address.'); return; }
+      const btn = document.querySelector('#forgot-step2 .btn-primary');
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+      try {
+        await sendPasswordResetEmail(auth, email);
+        document.getElementById('forgot-step2').style.display = 'none';
+        document.getElementById('forgot-step3').style.display = 'block';
+        document.getElementById('forgot-success-msg').textContent = '✅ Reset email sent!';
+        document.getElementById('forgot-success-sub').textContent = 'Check your inbox at ' + email + ' and click the reset link. If you don\'t see it, check your spam folder.';
+      } catch(e) {
+        btn.innerHTML = '📤 Send Reset Code';
+        btn.disabled = false;
+        const msgs = {
+          'auth/user-not-found':  '⚠ No account found with this email.',
+          'auth/invalid-email':   '⚠ Invalid email address.',
+          'auth/too-many-requests': '⚠ Too many attempts. Please try again later.'
+        };
+        showError('forgotError', msgs[e.code] || '⚠ ' + e.message);
+      }
+    } else {
+      // Phone reset
+      const phone = document.getElementById('forgotPhone').value.trim();
+      if (!phone) { showError('forgotError', '⚠ Please enter your phone number.'); return; }
+      document.getElementById('forgot-step2').style.display = 'none';
+      document.getElementById('forgot-step3').style.display = 'block';
+      document.getElementById('forgot-success-msg').textContent = '📱 SMS Reset Not Available Yet';
+      document.getElementById('forgot-success-sub').textContent = 'Phone-based password reset requires additional Firebase SMS configuration. Please use the Email option to reset your password.';
+    }
+  };
+
+  /* ── NAV ROUTING ──────────────────────────────────────────── */
+  const sectionMeta = {
+    dashboard: { title:'Dashboard',       sub:'Live UrbanEye telemetry and command control.',         badge:'Local Bridge', badgeClass:'warning' },
+    history:   { title:'Capture History', sub:'Log of all events detected and captured by the drone.',   badge:'🕒 History Log',    badgeClass:'warning' },
+    profile:   { title:'Admin',           sub:'Operator access and dashboard management.',  badge:'🛡️ Admin',        badgeClass:'warning' },
+    settings:  { title:'Settings',        sub:'Manage appearance, notifications, and system preferences.',badge:'',               badgeClass:'' },
+    plates:    { title:'Plates Database', sub:'License plate records — search by plate number.', badge:'🚗 Plates DB', badgeClass:'warning' },
+  };
+
+  window.setNav = function(section) {
+    document.querySelectorAll('.sub-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-'+section).classList.add('active');
+    document.querySelectorAll('#navLinks a').forEach(a => {
+      a.classList.toggle('active', a.dataset.section === section);
+    });
+    const meta = sectionMeta[section];
+    document.getElementById('pageTitle').textContent    = meta.title;
+    document.getElementById('pageSubtitle').textContent = meta.sub;
+    const badge = document.getElementById('topBadge');
+    if (meta.badge) {
+      badge.innerHTML = meta.badge;
+      badge.className = 'badge ' + meta.badgeClass;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+    document.getElementById('sidebar').classList.remove('open');
+    if (section === 'history') loadHistory();
+    if (section === 'plates')  loadPlates();
+  };
+
+  /* ── MOBILE MENU ──────────────────────────────────────────── */
+  window.toggleSidebarDrawer = function() {
+    const sidebar = document.getElementById('sidebar');
+    const main = document.querySelector('.main');
+    if (!sidebar || !main) return;
+    if (window.innerWidth <= 860) {
+      sidebar.classList.toggle('open');
+    } else {
+      sidebar.classList.toggle('closed');
+      main.classList.toggle('sidebar-closed');
+    }
+  };
+  document.getElementById('menuBtn').addEventListener('click', window.toggleSidebarDrawer);
+
+  /* ── ENTER KEY SUPPORT ────────────────────────────────────── */
+  ['loginEmail','loginPass'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.doLogin();
+    });
+  });
+  ['signupEmail','signupPass','signupConf'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.doSignup();
+    });
+  });
+  document.getElementById('forgotEmail').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.forgotSend();
+  });
+
+  /* ── URBANEYE COMMAND TEXT BOX ────────────────────────────── */
+  let currentLocation = '';
+  let voiceRecorder = null;
+  let voiceChunks = [];
+  let voiceRecording = false;
+
+  function setVoiceButton(recording) {
+    const btn = document.getElementById('voiceRecordButton');
+    if (!btn) return;
+    btn.classList.toggle('recording', recording);
+    btn.innerHTML = recording
+      ? '⏹ Stop'
+      : '🎙️ Voice';
+  }
+
+  function writeStringToDataView(view, offset, text) {
+    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+  }
+
+  function audioBufferToWavBlob(audioBuffer) {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const samples = audioBuffer.length;
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = samples * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    writeStringToDataView(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeStringToDataView(view, 8, 'WAVE');
+    writeStringToDataView(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);       // PCM header length
+    view.setUint16(20, 1, true);        // PCM format
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);       // 16-bit PCM
+    writeStringToDataView(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    const channelData = [];
+    for (let ch = 0; ch < numChannels; ch++) channelData.push(audioBuffer.getChannelData(ch));
+
+    let offset = 44;
+    for (let i = 0; i < samples; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        let sample = Math.max(-1, Math.min(1, channelData[ch][i]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  async function convertRecordedBlobToWavBlob(recordedBlob) {
+    const arrayBuffer = await recordedBlob.arrayBuffer();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error('This browser cannot convert the recording to WAV.');
+    const audioContext = new AudioContextClass();
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      return audioBufferToWavBlob(audioBuffer);
+    } finally {
+      if (audioContext.close) audioContext.close();
+    }
+  }
+
+  async function uploadVoiceCommand(blob) {
+    // Real fix: upload WAV, not WebM. Hugging Face accepts audio/wav.
+    const res = await fetch(API_BASE + '/api/voice/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'audio/wav; charset=binary' },
+      body: blob
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || data.message || 'Voice upload failed');
+    return data;
+  }
+
+  window.toggleVoiceRecording = async function() {
+    try {
+      if (voiceRecording && voiceRecorder) {
+        voiceRecorder.stop();
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setBackendMessage('Microphone recording is not supported in this browser.', false);
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChunks = [];
+
+      let options = {};
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        options = { mimeType: 'audio/webm;codecs=opus' };
+      } else if (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' };
+      }
+
+      voiceRecorder = new MediaRecorder(stream, options);
+
+      voiceRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) voiceChunks.push(event.data);
+      };
+
+      voiceRecorder.onstop = async () => {
+        voiceRecording = false;
+        setVoiceButton(false);
+        stream.getTracks().forEach(track => track.stop());
+
+        const audioType = (voiceRecorder && voiceRecorder.mimeType) ? voiceRecorder.mimeType : 'audio/webm;codecs=opus';
+        const recordedBlob = new Blob(voiceChunks, { type: audioType });
+        if (!recordedBlob.size) {
+          setBackendMessage('Voice recording failed: empty audio file.', false);
+          return;
+        }
+
+        setBackendMessage('Converting voice to WAV, then transcribing with Whisper large-v3...', true);
+        try {
+          const wavBlob = await convertRecordedBlobToWavBlob(recordedBlob);
+          if (!wavBlob.size) throw new Error('WAV conversion created an empty file.');
+          const data = await uploadVoiceCommand(wavBlob);
+          const transcript = String(data.transcript || '').trim();
+          if (transcript) {
+            const input = document.getElementById('locationInput');
+            if (input) input.value = transcript;
+            currentLocation = transcript;
+          }
+          const navMsg = (data.nav_result && data.nav_result.message) ? data.nav_result.message : (data.message || 'Voice command processed.');
+          const ok = !!data.accepted || !!data.ok;
+          setBackendMessage(transcript ? ('Voice heard: "' + transcript + '". ' + navMsg) : navMsg, ok);
+          pushNotif('🎙️', ok ? 'Voice Command Sent' : 'Voice Transcribed', transcript || navMsg);
+        } catch (e) {
+          setBackendMessage('Voice recognition failed: ' + e.message, false);
+        }
+      };
+
+      voiceRecorder.start();
+      voiceRecording = true;
+      setVoiceButton(true);
+      setBackendMessage('Recording voice command... click Stop when finished.', true);
+    } catch (e) {
+      voiceRecording = false;
+      setVoiceButton(false);
+      setBackendMessage('Microphone error: ' + e.message, false);
+    }
+  };
+
+  window.startDroneSystem = async function() {
+    startRequested = true;
+    setStartButtonState('connecting');
+    setBackendMessage('Connecting to PX4. Waiting for UrbanEye backend...', true);
+    startTelemetryPolling();
+    try {
+      const data = await apiFetch('/api/start', { method:'POST', body:'{}' });
+      pushNotif('🚁', 'UrbanEye Starting', data.message || 'Backend start requested');
+      await waitUntilDroneReady();
+    } catch(e) {
+      startRequested = false;
+      setStartButtonState('error');
+      setBackendMessage('Backend error: ' + e.message, false);
+    }
+  };
+  window.setLocation = async function() {
+    const val = document.getElementById('locationInput').value.trim();
+    if (!val) return;
+    currentLocation = val;
+    setBackendMessage('Sending command: ' + val, true);
+    try {
+      const data = await apiFetch('/api/command', {
+        method:'POST',
+        body: JSON.stringify({ command: val })
+      });
+      setBackendMessage(data.message || 'Command accepted.', !!data.ok);
+      pushNotif('📤', 'Command Sent', val);
+      document.getElementById('locationInput').value = '';
+      pollTelemetry();
+    } catch(e) {
+      setBackendMessage('Command failed: ' + e.message, false);
+    }
+  };
+  window.sendLandCommand = async function() {
+    currentLocation = 'land';
+    setBackendMessage('Sending land command...', true);
+    try {
+      const data = await apiFetch('/api/land', { method:'POST', body:'{}' });
+      setBackendMessage(data.message || 'Land command sent.', !!data.ok);
+      pushNotif('🛬', 'Land Command', 'Landing requested from dashboard');
+      pollTelemetry();
+    } catch(e) {
+      setBackendMessage('Land failed: ' + e.message, false);
+    }
+  };
+  window.clearLocation = function() {
+    currentLocation = '';
+    document.getElementById('locationInput').value = '';
+    document.getElementById('currentLocationDisplay').style.display = 'none';
+  };
+  document.getElementById('locationInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.setLocation();
+  });
+
+  /* ── HISTORY (Firestore) ──────────────────────────────────── */
+  const eventTypes = [
+    { label: 'Accident',   badge: 'danger',  icon: '🚨' },
+    { label: 'Violation',  badge: 'warning', icon: '⚠️' },
+  ];
+
+  async function addHistoryRecord(eventLabel, badgeClass, icon, imageDataUrl) {
+    const now  = new Date();
+    const loc  = currentLocation || 'Unknown Location';
+    const record = {
+      event:     icon + ' ' + eventLabel,
+      location:  loc,
+      date:      now.toLocaleDateString('en-GB'),
+      time:      now.toLocaleTimeString('en-GB'),
+      badge:     badgeClass,
+      image:     imageDataUrl || '',
+      timestamp: serverTimestamp()
+    };
+    try {
+      await addDoc(collection(db, 'history'), record);
+      await loadHistory();
+    } catch(e) { console.error('Firestore write error:', e); }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function getHistoryPlate(record) {
+    return String(record.licensePlate || record.plate || record.plateNumber || '').trim();
+  }
+
+  function getHistoryGps(record) {
+    const direct = record.gpsCoordinates || record.gps || record.coordinates;
+    if (typeof direct === 'string' && direct.trim()) return direct.trim();
+    if (Array.isArray(direct) && direct.length >= 2) {
+      const a = Number(direct[0]);
+      const b = Number(direct[1]);
+      if (Number.isFinite(a) && Number.isFinite(b)) return a.toFixed(6) + ', ' + b.toFixed(6);
+    }
+    if (direct && typeof direct === 'object') {
+      const lat = direct.lat ?? direct.latitude;
+      const lon = direct.lon ?? direct.lng ?? direct.longitude;
+      if (lat !== undefined && lon !== undefined) {
+        const latN = Number(lat);
+        const lonN = Number(lon);
+        if (Number.isFinite(latN) && Number.isFinite(lonN)) return latN.toFixed(6) + ', ' + lonN.toFixed(6);
+        return String(lat) + ', ' + String(lon);
+      }
+    }
+    const lat = record.latitude ?? record.lat;
+    const lon = record.longitude ?? record.lon ?? record.lng;
+    if (lat !== undefined && lon !== undefined) {
+      const latN = Number(lat);
+      const lonN = Number(lon);
+      if (Number.isFinite(latN) && Number.isFinite(lonN)) return latN.toFixed(6) + ', ' + lonN.toFixed(6);
+      return String(lat) + ', ' + String(lon);
+    }
+    return '—';
+  }
+
+  window.openPlateFromHistory = async function(encodedPlate) {
+    const plate = decodeURIComponent(encodedPlate || '').trim();
+    setNav('plates');
+    await loadPlates();
+    const input = document.getElementById('plateSearchInput');
+    if (input) {
+      input.value = plate;
+      await window.searchPlate();
+      input.focus();
+    }
+  };
+
+  async function loadHistory() {
+    const tbody = document.getElementById('historyBody');
+    if (!tbody) return;
+    try {
+      const q    = query(collection(db, 'history'), orderBy('timestamp', 'desc'));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--muted); font-size:0.9rem;">No captures recorded yet.</td></tr>`;
+        return;
+      }
+      let counter = snap.size;
+      tbody.innerHTML = snap.docs.map(d => {
+        const r = d.data();
+        const imgHtml = r.image
+          ? `<img class="capture-thumb" src="${r.image}" alt="capture" onclick="openImgModal('${r.image}')">`
+          : `<div class="no-thumb">📷</div>`;
+        const types = Array.isArray(r.cvIncidentTypes) && r.cvIncidentTypes.length
+          ? r.cvIncidentTypes
+          : (Array.isArray(r.cvIncidents) ? r.cvIncidents.map(i => i.type).filter(Boolean) : []);
+        const statusLabel = r.badge === 'danger'
+          ? '🚨 Accident'
+          : '⚠️ Violation';
+        const gpsText = getHistoryGps(r);
+        const plate = getHistoryPlate(r);
+        const plateList = plate.split(',').map(p => p.trim()).filter(Boolean);
+        const manualPlate = !plateList.length || /unreadable|manual review/i.test(plate);
+        const plateHtml = manualPlate
+          ? `<span style="color:var(--muted)">${escapeHtml(plate || 'Unreadable / manual review')}</span>`
+          : plateList.map(p => `<button class="plate-link" onclick="openPlateFromHistory('${encodeURIComponent(p)}')">${escapeHtml(p)}</button>`).join('<br>');
+        return `<tr>
+          <td style="color:var(--muted); font-size:0.82rem">#${counter--}</td>
+          <td>${imgHtml}</td>
+          <td style="color:var(--accent3); font-size:0.85rem">📍 ${escapeHtml(gpsText)}</td>
+          <td>${plateHtml}</td>
+          <td style="color:var(--muted); font-size:0.85rem">${escapeHtml(r.date || '—')}</td>
+          <td style="color:var(--muted); font-size:0.85rem">${escapeHtml(r.time || '—')}</td>
+          <td><span class="badge ${r.badge || 'warning'}" style="white-space:normal; line-height:1.45; text-align:left;">${escapeHtml(statusLabel)}</span></td>
+          <td class="history-action-cell"><button class="history-delete-btn" title="Delete this record" onclick="deleteHistoryInstance('${encodeURIComponent(d.id)}')">×</button></td>
+        </tr>`;
+      }).join('');
+    } catch(e) { console.error('Firestore read error:', e); }
+  }
+
+  window.openImgModal = function(src) {
+    document.getElementById('imgModalSrc').src = src;
+    document.getElementById('imgModal').classList.add('open');
+  };
+  window.closeImgModal = function() {
+    document.getElementById('imgModal').classList.remove('open');
+  };
+
+  window.addManualRecord = async function() {
+    const type  = document.getElementById('newEventType').value;
+    const file  = document.getElementById('newEventImage').files[0];
+    const msg   = document.getElementById('addRecordMsg');
+    const labels = { danger: ['Accident','🚨'], warning: ['Violation','⚠️'] };
+    const [label, icon] = labels[type];
+
+    let imageDataUrl = '';
+    if (file) {
+      imageDataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    }
+
+    msg.style.display = 'block';
+    msg.style.color   = 'var(--accent3)';
+    msg.textContent   = '⏳ Saving...';
+
+    await addHistoryRecord(label, type, icon, imageDataUrl);
+
+    msg.style.color   = '#9df7b5';
+    msg.textContent   = '✔ Saved successfully!';
+    document.getElementById('newEventImage').value = '';
+    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    pushNotif(icon, 'New ' + label, currentLocation || 'Unknown Location');
+  };
+
+
+  window.deleteHistoryInstance = async function(encodedId) {
+    const id = decodeURIComponent(encodedId || '');
+    if (!id) return;
+    const ok = confirm('Delete this history record?');
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, 'history', id));
+      await loadHistory();
+      pushNotif('🗑️', 'History Record Deleted', 'One capture was removed.');
+    } catch(e) {
+      console.error('Delete history record error:', e);
+      alert('Could not delete this record: ' + e.message);
+    }
+  };
+
+  window.clearHistory = async function() {
+    try {
+      const snap = await getDocs(collection(db, 'history'));
+      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, 'history', d.id))));
+      await loadHistory();
+    } catch(e) { console.error('Clear error:', e); }
+  };
+
+  /* AUTO-LOG DISABLED — waiting for real drone integration */
+
+  /* ── ADMIN: CHANGE PASSWORD ───────────────────────────────── */
+  window.saveAdmin = async function() {
+    pushNotif('🛡️', 'Admin Information', 'Admin page is read-only.');
+  };
+
+  /* ── THEME TOGGLE ─────────────────────────────────────────── */
+  const themeToggle = document.getElementById('themeToggle');
+  if (localStorage.getItem('drone-theme') === 'light') {
+    document.body.classList.add('light-mode');
+    themeToggle.checked = true;
+  }
+  themeToggle.addEventListener('change', () => {
+    document.body.classList.toggle('light-mode');
+    localStorage.setItem('drone-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+  });
+  /* ── NOTIFICATION BELL ────────────────────────────────────── */
+  const notifications = [];
+
+  window.pushNotif = function(icon, title, sub) {
+    notifications.unshift({ icon, title, sub, unread: true, time: new Date() });
+    renderNotifs();
+  };
+
+  function renderNotifs() {
+    const list  = document.getElementById('notifList');
+    const badge = document.getElementById('notifBadge');
+    const empty = document.getElementById('notifEmpty');
+    const unreadCount = notifications.filter(n => n.unread).length;
+
+    if (notifications.length === 0) {
+      list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+      badge.classList.remove('show');
+      return;
+    }
+
+    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+    unreadCount > 0 ? badge.classList.add('show') : badge.classList.remove('show');
+
+    list.innerHTML = notifications.map((n, i) => `
+      <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="markRead(${i})">
+        <div class="notif-icon">${n.icon}</div>
+        <div class="notif-text">
+          <strong>${n.title}</strong>
+          <span>${n.sub}</span><br>
+          <span style="font-size:0.72rem; color:var(--muted); opacity:0.7">${n.time.toLocaleTimeString('en-GB')}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.markRead = function(i) {
+    notifications[i].unread = false;
+    renderNotifs();
+  };
+
+  window.clearNotifs = function() {
+    notifications.length = 0;
+    renderNotifs();
+    document.getElementById('notifDropdown').classList.remove('open');
+  };
+
+  window.toggleNotif = function() {
+    const dd = document.getElementById('notifDropdown');
+    dd.classList.toggle('open');
+    // mark all as read when opened
+    if (dd.classList.contains('open')) {
+      notifications.forEach(n => n.unread = false);
+      renderNotifs();
+    }
+  };
+
+  // close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    if (!document.getElementById('notifBell').contains(e.target) &&
+        !document.getElementById('notifDropdown').contains(e.target)) {
+      document.getElementById('notifDropdown').classList.remove('open');
+    }
+  });
+
+  // hook into history events to push notifications
+  const _origAddHistory = addHistoryRecord;
+  window.addHistoryRecord = async function(eventLabel, badgeClass, icon) {
+    await _origAddHistory(eventLabel, badgeClass, icon);
+    pushNotif(icon, eventLabel, 'New event recorded · ' + (currentLocation || 'Unknown Location'));
+  };
+
+  /* ══════════════════════════════════════════════════════════
+     PLATES DATABASE
+  ══════════════════════════════════════════════════════════ */
+
+  const PLATES_DATA = [
+    { plate:'12-345-67', name:'Ahmad Khalil Al-Masri',     phone:'0791234567', address:'Irbid, Al-Hussain St' },
+    { plate:'23-456-78', name:'Mohammad Yousef Salameh',   phone:'0792345678', address:'Amman, Jabal Al-Weibdeh' },
+    { plate:'34-567-89', name:'Khaled Ibrahim Nasser',     phone:'0793456789', address:'Zarqa, Al-Zarqa Al-Jadida' },
+    { plate:'45-678-90', name:'Omar Faisal Al-Rawabdeh',   phone:'0794567890', address:'Aqaba, Al-Nahda District' },
+    { plate:'56-789-01', name:'Yousef Mahmoud Bani Hani',  phone:'0795678901', address:'Irbid, University St' },
+    { plate:'67-890-12', name:'Tariq Hassan Al-Shawabkeh', phone:'0796789012', address:'Amman, Khalda' },
+    { plate:'78-901-23', name:'Sami Nader Al-Zoubi',       phone:'0797890123', address:'Mafraq, City Center' },
+    { plate:'89-012-34', name:'Rami Adel Qassem',          phone:'0798901234', address:'Irbid, Al-Hay Al-Janoubi' },
+    { plate:'90-123-45', name:'Nidal Samir Al-Dabbas',     phone:'0799012345', address:'Amman, Sweileh' },
+    { plate:'01-234-56', name:'Bassem Walid Tarawneh',     phone:'0790123456', address:'Karak, Al-Mazar' },
+    { plate:'11-222-33', name:'Eyad Jaber Al-Hmoud',       phone:'0791122333', address:'Amman, Al-Rabiyeh' },
+    { plate:'22-333-44', name:'Firas Osama Al-Aqrabawi',   phone:'0792233344', address:'Irbid, Al-Barra' },
+    { plate:'33-444-55', name:'Hasan Ali Bani Yaseen',     phone:'0793344455', address:'Jerash, City Center' },
+    { plate:'44-555-66', name:'Imad Raed Al-Faouri',       phone:'0794455566', address:'Amman, Marka' },
+    { plate:'55-666-77', name:'Jad Louay Al-Natour',       phone:'0795566677', address:'Amman, Tla Al-Ali' },
+    { plate:'66-777-88', name:'Karim Ziad Bani Amer',      phone:'0796677788', address:'Irbid, Al-Ramtha' },
+    { plate:'77-888-99', name:'Laith Murad Al-Shakhshir',  phone:'0797788899', address:'Amman, Jubaiha' },
+    { plate:'88-999-00', name:'Mazen Saed Al-Kilani',      phone:'0798899900', address:'Salt, Old Town' },
+    { plate:'99-000-11', name:'Nour Anas Al-Awamleh',      phone:'0799900011', address:'Amman, Dahiyat Al-Rashid' },
+    { plate:'00-111-22', name:'Walid Ghazi Al-Omari',      phone:'0790011122', address:'Irbid, Al-Husn' },
+  ];
+
+  /* seed Firestore on first run */
+  window.seedPlatesDB = async function() {
+    const btn = document.querySelector('[onclick="seedPlatesDB()"]');
+    btn.textContent = '⏳ Seeding...'; btn.disabled = true;
+    try {
+      for (const p of PLATES_DATA) {
+        await setDoc(doc(db, 'plates', p.plate), p);
+      }
+      btn.textContent = '✅ Done!';
+      await loadPlates();
+      pushNotif('🚗', 'Plates DB Seeded', '20 records added to Firestore');
+    } catch(e) {
+      btn.textContent = '⚠ Error'; btn.disabled = false;
+      console.error(e);
+    }
+  };
+
+  /* load all plates into table */
+  async function loadPlates() {
+    const tbody = document.getElementById('platesBody');
+    try {
+      const snap = await getDocs(collection(db, 'plates'));
+      if (snap.empty) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted);">No records yet. Click "Seed DB" to add sample data.</td></tr>`;
+        document.getElementById('platesCountText').textContent = '0 records';
+        return;
+      }
+      const rows = [];
+      snap.forEach(d => rows.push(d.data()));
+      rows.sort((a,b) => a.plate.localeCompare(b.plate));
+      document.getElementById('platesCountText').textContent = rows.length + ' records registered';
+      tbody.innerHTML = rows.map((r,i) => `
+        <tr>
+          <td style="color:var(--muted);font-size:0.82rem">${i+1}</td>
+          <td><button class="plate-link" onclick="document.getElementById('plateSearchInput').value='${r.plate}'; searchPlate();">${r.plate}</button></td>
+          <td>${r.name}</td>
+          <td style="color:var(--accent3)">${r.phone}</td>
+          <td style="color:var(--muted);font-size:0.85rem">📍 ${r.address}</td>
+        </tr>`).join('');
+    } catch(e) { console.error('loadPlates error:', e); }
+  }
+
+  /* manual search */
+  window.searchPlate = async function() {
+    const val = document.getElementById('plateSearchInput').value.trim();
+    document.getElementById('plateResult').style.display    = 'none';
+    document.getElementById('plateNotFound').style.display  = 'none';
+    if (!val) return;
+    try {
+      const snap = await getDoc(doc(db, 'plates', val));
+      if (snap.exists()) {
+        showPlateResult(snap.data());
+      } else {
+        // fuzzy: search by partial
+        const all = await getDocs(collection(db, 'plates'));
+        let found = null;
+        all.forEach(d => { if (d.data().plate.includes(val)) found = d.data(); });
+        if (found) showPlateResult(found);
+        else document.getElementById('plateNotFound').style.display = 'block';
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  function showPlateResult(r) {
+    document.getElementById('res-name').textContent    = r.name;
+    document.getElementById('res-phone').textContent   = r.phone;
+    document.getElementById('res-address').textContent = r.address;
+    document.getElementById('res-plate').textContent   = r.plate;
+    document.getElementById('plateResultBadge').textContent = r.plate;
+    document.getElementById('plateResult').style.display   = 'block';
+    document.getElementById('plateNotFound').style.display = 'none';
+    pushNotif('🚗', 'Plate Looked Up', r.plate + ' → ' + r.name);
+  }
+
+  /* AI image scan */
+  window.scanPlateImage = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById('plateScanStatus');
+    status.style.display = 'block';
+    status.textContent = '🔍 Reading plate from image...';
+
+    // convert to base64
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
+              { type: 'text',  text: 'Read the license plate number in this image. Reply with ONLY the plate number exactly as shown, nothing else. Format like: 12-345-67' }
+            ]
+          }]
+        })
+      });
+      const data = await resp.json();
+      const plateNum = data.content?.[0]?.text?.trim();
+      if (!plateNum) { status.textContent = '⚠ Could not read plate.'; return; }
+
+      status.textContent = '✅ Plate detected: ' + plateNum + ' — searching...';
+      document.getElementById('plateSearchInput').value = plateNum;
+      await window.searchPlate();
+      status.textContent = '✅ Plate detected: ' + plateNum;
+    } catch(err) {
+      status.textContent = '⚠ Scan failed: ' + err.message;
+    }
+  };
+
+</script>
+
+<!-- IMAGE MODAL -->
+<div class="img-modal" id="imgModal" onclick="closeImgModal()">
+  <span class="img-modal-close">✕</span>
+  <img id="imgModalSrc" src="" alt="Capture">
+</div>
+
+</body>
+</html>
