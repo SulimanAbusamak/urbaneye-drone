@@ -187,5 +187,5 @@ it is not included here.
 
 ## Author
 
-**Suliman Abusamak** — Applied Science Private University, Jordan
+**Suliman Abusamak** and **Hala Salem** — Applied Science Private University, Jordan
 Graduation project, 2026.
